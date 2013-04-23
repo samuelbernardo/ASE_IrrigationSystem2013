@@ -1,2 +1,0 @@
-COMPONENT=ApplicationLinkerC
-include $(MAKERULES)
