@@ -10,7 +10,7 @@
 // crio esta struct, escrevo nela, e depois meto-a no 'payload'
 // da message_t
 typedef nx_struct TTLsyncMsg {
-  nx_uint16_t ttl;
+	nx_uint16_t ttl;
 	nx_uint16_t syncTS;
 	nx_uint16_t numHopsToServer;
 	nx_uint16_t lastNode;
@@ -20,6 +20,9 @@ typedef nx_struct TTLsyncMsg {
 	provides interface SyncProtocol;
 	
   uses interface Timer<TMilli> as Timer0;
+  
+  // Para controlo do lock no envio das mensagens
+  uses interface RadioModule;
 
   // Para enviar e processar packets
   uses interface Packet;    //aceder a message_t
@@ -37,7 +40,6 @@ typedef nx_struct TTLsyncMsg {
 	uint16_t ttl_max = __NUM_MAX_MOTES__;
 	uint16_t ts = 0;
 
-  bool busy = FALSE;  //flag de acesso ao radio
   message_t syncPathPkt;      //pacote a ser enviado
 
 	bool reenviar = TRUE;
@@ -49,7 +51,7 @@ typedef nx_struct TTLsyncMsg {
   void enviarMsgControlo(){
       /* == ENVIAR PACOTES == */ 
       // DEBUG: apenas o mote'0' envia mensagem inicial
-      if (!busy && (moteID == 0)) {
+      if (!(call RadioModule.getChannelState()) && (moteID == 0)) {
         // btrpkt = aponta para payload da variavel 'message_t pkt'
         TTLsyncMsg* btrpkt = (TTLsyncMsg*)(call Packet.getPayload(&syncPathPkt, sizeof(TTLsyncMsg)));
         
@@ -60,7 +62,7 @@ typedef nx_struct TTLsyncMsg {
 
         //assinarMensagem(btrpkt);
         if (call AMSend.send(AM_BROADCAST_ADDR, &syncPathPkt, sizeof(TTLsyncMsg)) == SUCCESS) {
-          busy = TRUE;
+          call RadioModule.setChannelState(TRUE);
         }
       }
     }
@@ -75,14 +77,14 @@ typedef nx_struct TTLsyncMsg {
     void reenviarMsgControlo(message_t* msg, TTLsyncMsg* btrpkt){
       // == REenviar PACOTES / ROUTING DE PACOTES == 
       // DEBUG: apenas o mote'0' envia mensagens
-      if(!busy && moteID != 0 && btrpkt->ttl > 1) {
+      if(!(call RadioModule.getChannelState()) && moteID != 0 && btrpkt->ttl > 1) {
 				
 				if(btrpkt->numHopsToServer <= ttl_max || ts < btrpkt->syncTS) {
 					ttl_max = btrpkt->numHopsToServer;
 					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
-						busy = TRUE;
+						call RadioModule.setChannelState(TRUE);
 					}
 				}
 
@@ -93,10 +95,11 @@ typedef nx_struct TTLsyncMsg {
     event void AMSend.sendDone(message_t* msg, error_t error) {
       if ( &syncPathPkt == msg ) {
 				TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
-        //[TODO] dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
-        busy = FALSE;
+
+        dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
+        call RadioModule.setChannelState(FALSE);
       }
-    }   
+    }
 
     /* == RECEBER PACOTES == */
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
@@ -127,7 +130,7 @@ typedef nx_struct TTLsyncMsg {
 				else {
 					
 					FILE *msgOut;
-					msgOut = fopen("messages.log", "a+");
+					msgOut = fopen("configFiles/messages.log", "a+");
 					fprintf(msgOut, "Recebi mensagem do mote lastNode=%i, com timestamp= %i, numHopsToServer = %i, ttl = %i \n", btrpkt->lastNode, btrpkt->syncTS, btrpkt->numHopsToServer, btrpkt->ttl);
 					fclose(msgOut);
 					
@@ -138,14 +141,20 @@ typedef nx_struct TTLsyncMsg {
       return &syncPathPkt;
     }
     
+    /**
+     * Get TTL max
+     **/
+    command uint16_t SyncProtocol.getTTLmax() {
+    	return ttl_max;
+    }
     
-		/**
-		 * Vai lançando temporizadamente mensagens para controlo do estado
-		 * da topologia da rede
-		 **/
-		event void Timer0.fired() {
-			enviarMsgControlo();
-		}
+	/**
+	 * Vai lançando temporizadamente mensagens para controlo do estado
+	 * da topologia da rede
+	 **/
+	event void Timer0.fired() {
+		enviarMsgControlo();
+	}
     
     /**
      * Comando a ser lançando após o arranque de AMcontrol

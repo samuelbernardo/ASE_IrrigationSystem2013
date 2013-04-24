@@ -18,7 +18,7 @@ module RadioModuleC @safe() {
 
   //----------------------------
   uses interface IrrigationSystem;
-  //uses interface SyncProtocol;
+  uses interface SyncProtocol;
   uses interface Timer<TMilli> as Timer;
 
 }
@@ -208,5 +208,16 @@ implementation {
 	 	}
 	 	return bufPtr;
 	}
- 	
+	
+	/**
+	 * methods for channel control
+	 **/
+	command bool RadioModule.getChannelState() {
+		return channelIsBusy;
+	}
+	
+	command void RadioModule.setChannelState(bool state) {
+		channelIsBusy = state;
+	}
+	
 }
