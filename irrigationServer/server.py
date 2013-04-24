@@ -108,9 +108,9 @@ createNetworkTopology()
 createMoteNoiseModel(m0)
 createMoteNoiseModel(m1)
 createMoteNoiseModel(m2)
+createMoteNoiseModel(m3)
 createMoteNoiseModel(m4)
 createMoteNoiseModel(m5)
-
 
 for i in range(100) :
 	t.runNextEvent()

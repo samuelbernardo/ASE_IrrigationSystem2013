@@ -28,7 +28,10 @@ implementation {
 	message_t packet;
 	bool channelIsBusy;
   
+	bool firstSend;
+
   event void Boot.booted() {
+		firstSend = TRUE;
 		tServer = 100000; 		//Default Value
 		channelIsBusy = FALSE;
    
@@ -66,7 +69,8 @@ implementation {
 		RadioMeasuresPacket *rmp;
 		//dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
 
-		if(!channelIsBusy && TOS_NODE_ID == 5){
+		if(!channelIsBusy && TOS_NODE_ID == 5 && firstSend == TRUE){
+			firstSend = FALSE;
 			rmp = (RadioMeasuresPacket*)(call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
 			
 			rmp->srcNodeId = TOS_NODE_ID;
@@ -74,7 +78,7 @@ implementation {
 			rmp->measures[0] = measure;
 			rmp->measuresTS[0] = measureTS;
 			rmp->measuresIndex = 1;
-			rmp->packetTTL = 10;
+			rmp->packetTTL = 10; // <-- chamar funcao do Samuel
 			
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
@@ -85,7 +89,7 @@ implementation {
 	event void AMSend.sendDone(message_t* msg, error_t error) {
     	if (&packet == msg) {
           	channelIsBusy = FALSE;
-        	dbg("out", "Enviei mensagem(tirei lock do channel)\n");
+        	//dbg("out", "Enviei mensagem(tirei lock do channel)\n");
       	}
     }
 
@@ -134,12 +138,16 @@ implementation {
 		RadioMeasuresPacket *pktRcv = (RadioMeasuresPacket*) payload;	
 		//packet a ser enviada
 		RadioMeasuresPacket *pktSnd = (RadioMeasuresPacket*) (call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
+	    
+	    //DEBUG
+	    dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pktRcv->srcNodeId,pktRcv->lastNodeId,pktRcv->packetTTL);
 		
-		if((pktRcv->packetTTL == 0) || (pktRcv->lastNodeId == TOS_NODE_ID)){
+		if((pktRcv->packetTTL <= 0) || (pktRcv->lastNodeId == TOS_NODE_ID)){
 			//TTL expirou, nao reenvia mensagem
 			//Este Mote foi o ultimo a reenviar mesnsagem, nao a volta a reenviar
 			return;
 		}
+
 
 		if(!channelIsBusy){
 		
@@ -181,8 +189,13 @@ implementation {
 	 	}
 
 	 	if(len == sizeof(RadioMeasuresPacket)){
-	    	dbg("out", "Recebi mensagem de outro mote =D ----------------------------\n"); //DEBUG
+	    	   	
 	 		if(TOS_NODE_ID == 0){
+	 			
+	 			//DEBUG	
+				RadioMeasuresPacket *pktRcv = (RadioMeasuresPacket*) payload;	
+	    		dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pktRcv->srcNodeId,pktRcv->lastNodeId,pktRcv->packetTTL);
+	 		
 	 			// TODO: Log da Mensagem Recebida
 	 			// TODO: Log das Medições da Rede
 	 		}
