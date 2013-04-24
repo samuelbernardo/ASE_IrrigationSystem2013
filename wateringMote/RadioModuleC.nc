@@ -18,7 +18,7 @@ module RadioModuleC @safe() {
 
   //----------------------------
   uses interface IrrigationSystem;
-  uses interface SyncProtocol;
+  //uses interface SyncProtocol;
   uses interface Timer<TMilli> as Timer;
 
 }
@@ -34,14 +34,14 @@ implementation {
    
     call AMControl.start();
     
-    dbg("out", "Mote %i fez Boot! \n", TOS_NODE_ID);
-		//dbg("out", "Radio Has Booted \n");
+    //dbg("out", "Mote %i fez Boot! \n", TOS_NODE_ID);
+	dbg("out", "Radio Has Booted \n");
   }
 
   event void AMControl.startDone(error_t err) {
     if (err == SUCCESS) {
       	call Timer.startPeriodic(tServer);
-      	call SyncProtocol.sendControlMsg();
+      	//call SyncProtocol.sendControlMsg();
     }
     else {
       	call AMControl.start();
@@ -64,9 +64,9 @@ implementation {
 	command void RadioModule.sendMeasure(uint8_t measure, uint16_t measureTS){
 
 		RadioMeasuresPacket *rmp;
-		dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
+		//dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
 
-		if(!channelIsBusy){
+		if(!channelIsBusy && TOS_NODE_ID == 5){
 			rmp = (RadioMeasuresPacket*)(call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
 			
 			rmp->srcNodeId = TOS_NODE_ID;
@@ -82,9 +82,14 @@ implementation {
 		}
 	}
 
+	event void AMSend.sendDone(message_t* msg, error_t error) {
+    	if (&packet == msg) {
+          	channelIsBusy = FALSE;
+        	dbg("out", "Enviei mensagem(tirei lock do channel)\n");
+      	}
+    }
 
   	// Aux Function
-
  	void processSetParameterMsg(radio_count_msg_t* pkt){
 		uint32_t paramValue = pkt->paramValue;
   		uint8_t operationCode = pkt->operationCode;
@@ -122,22 +127,73 @@ implementation {
 		return;
 	}
 
+	void routeTheMessage(void* payload){
+		
+		int i;
+		//packet recebida
+		RadioMeasuresPacket *pktRcv = (RadioMeasuresPacket*) payload;	
+		//packet a ser enviada
+		RadioMeasuresPacket *pktSnd = (RadioMeasuresPacket*) (call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
+		
+		if((pktRcv->packetTTL == 0) || (pktRcv->lastNodeId == TOS_NODE_ID)){
+			//TTL expirou, nao reenvia mensagem
+			//Este Mote foi o ultimo a reenviar mesnsagem, nao a volta a reenviar
+			return;
+		}
+
+		if(!channelIsBusy){
+		
+			pktSnd->srcNodeId = pktRcv->srcNodeId;
+			pktSnd->lastNodeId = TOS_NODE_ID;
+			pktSnd->packetTTL = (pktRcv->packetTTL - 1); 
+			pktSnd->measuresIndex = pktRcv->measuresIndex;
+
+			for(i=0; i < pktRcv->measuresIndex; i++){
+				pktSnd->measures[i] = pktSnd->measures[i];
+				pktSnd->measuresTS[i] = pktSnd->measuresTS[i];
+			}
+			
+			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
+          		channelIsBusy = TRUE;
+        	}	
+		}
+
+		/*
+		  nx_uint16_t	srcNodeId;			// 2 bytes
+		  nx_uint16_t	lastNodeId;			// 2 bytes
+		  nx_uint8_t	measures[7];		// 7 bytes
+		  nx_uint16_t	measuresTS[7];		// 14 bytes
+		  nx_uint8_t	measuresIndex;		// 1 byte
+		  nx_uint16_t	packetTTL;			// 2 bytes
+		*/
+	}
+
+
 	event message_t* Receive.receive(message_t* bufPtr, void* payload, uint8_t len) {
 	    
 		radio_count_msg_t* pkt;		
 	 	
+	 	//Recebeu mensagem do servidor
 	 	if(len == sizeof(radio_count_msg_t)){
 	    	//dbg("out", "Received *setParametersMsg* from Server\n"); //DEBUG
 	 		pkt = (radio_count_msg_t*)payload;
 	 		processSetParameterMsg(pkt);
 	 	}
-	
+
+	 	if(len == sizeof(RadioMeasuresPacket)){
+	    	dbg("out", "Recebi mensagem de outro mote =D ----------------------------\n"); //DEBUG
+	 		if(TOS_NODE_ID == 0){
+	 			// TODO: Log da Mensagem Recebida
+	 			// TODO: Log das Medições da Rede
+	 		}
+	 		else{
+	 			// TODO: Log da Mensagem Recebida
+	 			
+	 			// Reencaminhar Mensagem (routing)
+	 			routeTheMessage(payload);
+	 		}
+	 	}
 	 	return bufPtr;
 	}
-
-	event void AMSend.sendDone(message_t* bufPtr, error_t error) {
-		/*if (&packet == bufPtr) {
-	      //locked = FALSE;
-	    }*/
-	} 	
+ 	
 }

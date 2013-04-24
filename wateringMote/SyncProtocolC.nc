@@ -79,7 +79,7 @@ typedef nx_struct TTLsyncMsg {
 				
 				if(btrpkt->numHopsToServer <= ttl_max || ts < btrpkt->syncTS) {
 					ttl_max = btrpkt->numHopsToServer;
-					dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
+					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
 						busy = TRUE;
@@ -93,7 +93,7 @@ typedef nx_struct TTLsyncMsg {
     event void AMSend.sendDone(message_t* msg, error_t error) {
       if ( &syncPathPkt == msg ) {
 				TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
-        dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
+        //[TODO] dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
         busy = FALSE;
       }
     }   

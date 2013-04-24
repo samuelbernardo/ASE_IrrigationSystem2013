@@ -83,16 +83,34 @@ def sendSetParametersMsg(moteIDtoSend,paramValue,opCode):
 # Temos de ligar pelo menos um boot,
 # caso contrario o runNextEvent vai retornar sempre False,
 # porque nao tem boots onde executar eventos
-m1 = t.getNode(0)
+m0 = t.getNode(0)
+m0.bootAtTime(1)
+
+m1 = t.getNode(1)
 m1.bootAtTime(1)
 
-m2 = t.getNode(1)
+m2 = t.getNode(2)
 m2.bootAtTime(1)
+
+m3 = t.getNode(3)
+m3.bootAtTime(1)
+
+m4 = t.getNode(4)
+m4.bootAtTime(1)
+
+m5 = t.getNode(5)
+m5.bootAtTime(1)
+
+
 #v = m.getVariable("ContadorTimerC.contador")
 
 createNetworkTopology()
+createMoteNoiseModel(m0)
 createMoteNoiseModel(m1)
 createMoteNoiseModel(m2)
+createMoteNoiseModel(m4)
+createMoteNoiseModel(m5)
+
 
 for i in range(100) :
 	t.runNextEvent()
@@ -115,6 +133,7 @@ sendSetParametersMsg(1,23,3)
 sendSetParametersMsg(1,60,4)
 '''
 
+'''
 for counter in range (1,counterMax):
 	print "valor do contador: %i " % (counter)
 	#time.sleep(1)
@@ -125,10 +144,11 @@ for counter in range (1,counterMax):
 	time = t.time()
 	while time + timerStep > t.time():
 		t.runNextEvent()
+'''
 
-#while True :
-	#time.sleep(0.0001)
-	#t.runNextEvent()	
+while True :
+	time.sleep(0.0001)
+	t.runNextEvent()	
 	#counter = v.getData()
 	# Se descomentar este print fico com um resultado muita esquisito...
 	#print "valor do contador: %i " % (counter)

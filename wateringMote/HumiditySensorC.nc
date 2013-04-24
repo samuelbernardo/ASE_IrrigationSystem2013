@@ -29,7 +29,7 @@ implementation
 	}
 
 	event void Boot.booted(){
-		tMeasure = 100000000; 		//Valor Default (TODO: rever este valor que é maior que o que a variável consegue armazenar - aparece warning de overflow) 	
+		tMeasure = 100000; 	//Valor Default (TODO: rever este valor que é maior que o que a variável consegue armazenar - aparece warning de overflow) 	
 		newMeasure = 17;
 		timeStamp = 0;
 		call Timer.startPeriodic(tMeasure);
