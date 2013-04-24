@@ -34,7 +34,7 @@ implementation {
    
     call AMControl.start();
     
-    dbg("out", "Mote %i fez Boot! \n", moteID);
+    dbg("out", "Mote %i fez Boot! \n", TOS_NODE_ID);
 		//dbg("out", "Radio Has Booted \n");
   }
 

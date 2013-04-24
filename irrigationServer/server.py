@@ -30,6 +30,7 @@ mac = t.mac()
 #Aux variables
 networkMap = "serverConfigFiles/networkTopology2.txt"
 counterMax = 100
+timerStep = 1000
 
 # -------------------------------------------
 # Aux.Functions
@@ -122,7 +123,7 @@ for counter in range (1,counterMax):
 	# Problema com o print resolvido de acordo com a FAQ
 	counter += 1
 	time = t.time()
-	while time + 1000 > t.time():
+	while time + timerStep > t.time():
 		t.runNextEvent()
 
 #while True :
