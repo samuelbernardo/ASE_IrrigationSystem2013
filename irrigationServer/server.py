@@ -27,6 +27,10 @@ radio = t.radio()
 #Python mac object
 mac = t.mac()
 
+#Aux variables
+networkMap = "serverConfigFiles/networkTopology2.txt"
+counterMax = 100
+
 # -------------------------------------------
 # Aux.Functions
 def createMoteNoiseModel( mote ):
@@ -44,7 +48,7 @@ def createMoteNoiseModel( mote ):
 
 def createNetworkTopology():
 	sys.stdout.write('creating network topology... ');
-	f = open("serverConfigFiles/networkTopology3.txt", "r")
+	f = open(networkMap, "r")
 	for line in f:
 		s = line.split()
 		if s:
@@ -109,10 +113,21 @@ sendSetParametersMsg(1,11,1)
 sendSetParametersMsg(1,23,3)
 sendSetParametersMsg(1,60,4)
 '''
-	
-while True :
-	time.sleep(0.0001)
+
+for counter in range (1,counterMax):
+	print "valor do contador: %i " % (counter)
+	#time.sleep(1)
 	t.runNextEvent()	
+	#counter = v.getData()
+	# Problema com o print resolvido de acordo com a FAQ
+	counter += 1
+	time = t.time()
+	while time + 1000 > t.time():
+		t.runNextEvent()
+
+#while True :
+	#time.sleep(0.0001)
+	#t.runNextEvent()	
 	#counter = v.getData()
 	# Se descomentar este print fico com um resultado muita esquisito...
 	#print "valor do contador: %i " % (counter)

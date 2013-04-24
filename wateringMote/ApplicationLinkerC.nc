@@ -7,7 +7,8 @@ implementation
   components new TimerMilliC() as TimerHumidityC;
   components new TimerMilliC() as TimerRadioModuleC;
   components IrrigationSystemC;
-  components RadioModuleC;
+  components RadioModuleC, SyncProtocolC;
+  components new TimerMilliC() as Timer0;
 
   //Radio Components ---------------------------
   //components new TimerMilliC() as TimerRadioC;
@@ -26,6 +27,15 @@ implementation
   
   RadioModuleC.IrrigationSystem -> IrrigationSystemC;
   RadioModuleC.Timer -> TimerRadioModuleC;
+  RadioModuleC.SyncProtocol -> SyncProtocolC;
+  
+  //SyncProtocol --------------------------------
+  SyncProtocolC.Timer0 -> Timer0;
+  SyncProtocolC.Packet -> AMSenderC;
+  SyncProtocolC.AMPacket -> AMSenderC;
+  SyncProtocolC.AMSend -> AMSenderC;
+  SyncProtocolC.Receive -> AMReceiverC;
+  
   //------------------------------------------
 
   IrrigationSystemC -> MainC.Boot;

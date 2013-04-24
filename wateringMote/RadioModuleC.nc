@@ -18,6 +18,7 @@ module RadioModuleC @safe() {
 
   //----------------------------
   uses interface IrrigationSystem;
+  uses interface SyncProtocol;
   uses interface Timer<TMilli> as Timer;
 
 }
@@ -28,16 +29,19 @@ implementation {
 	bool channelIsBusy;
   
   event void Boot.booted() {
-    tServer = 100000; 		//Default Value
-	channelIsBusy = FALSE;
+		tServer = 100000; 		//Default Value
+		channelIsBusy = FALSE;
    
     call AMControl.start();
-	dbg("out", "Radio Has Booted \n");
+    
+    dbg("out", "Mote %i fez Boot! \n", moteID);
+		//dbg("out", "Radio Has Booted \n");
   }
 
   event void AMControl.startDone(error_t err) {
     if (err == SUCCESS) {
       	call Timer.startPeriodic(tServer);
+      	call SyncProtocol.sendControlMsg();
     }
     else {
       	call AMControl.start();
