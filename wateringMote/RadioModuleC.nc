@@ -44,7 +44,7 @@ implementation {
   event void AMControl.startDone(error_t err) {
     if (err == SUCCESS) {
       	call Timer.startPeriodic(tServer);
-      	//call SyncProtocol.sendControlMsg();
+      	call SyncProtocol.sendControlMsg();
     }
     else {
       	call AMControl.start();
@@ -78,7 +78,7 @@ implementation {
 			rmp->measures[0] = measure;
 			rmp->measuresTS[0] = measureTS;
 			rmp->measuresIndex = 1;
-			rmp->packetTTL = 10; // <-- chamar funcao do Samuel
+			rmp->packetTTL = call SyncProtocol.getTTLmax();
 			
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
