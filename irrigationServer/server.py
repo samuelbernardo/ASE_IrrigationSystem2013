@@ -117,18 +117,14 @@ sendSetParametersMsg(1,60,4)
 
 for counter in range (1,counterMax):
 	print "valor do contador: %i " % (counter)
-	#time.sleep(1)
-	t.runNextEvent()	
-	#counter = v.getData()
-	# Problema com o print resolvido de acordo com a FAQ
+	t.runNextEvent()
 	counter += 1
-	time = t.time()
-	while time + timerStep > t.time():
-		t.runNextEvent()
 
-#while True :
-	#time.sleep(0.0001)
-	#t.runNextEvent()	
-	#counter = v.getData()
+'''
+while True :
+	time.sleep(0.0001)
+	t.runNextEvent()	
+	counter = v.getData()
 	# Se descomentar este print fico com um resultado muita esquisito...
 	#print "valor do contador: %i " % (counter)
+'''

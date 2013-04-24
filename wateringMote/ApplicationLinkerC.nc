@@ -35,6 +35,7 @@ implementation
   SyncProtocolC.AMPacket -> AMSenderC;
   SyncProtocolC.AMSend -> AMSenderC;
   SyncProtocolC.Receive -> AMReceiverC;
+  SyncProtocolC.RadioModule -> RadioModuleC;
   
   //------------------------------------------
 

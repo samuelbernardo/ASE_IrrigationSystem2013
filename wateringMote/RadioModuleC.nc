@@ -139,5 +139,17 @@ implementation {
 		/*if (&packet == bufPtr) {
 	      //locked = FALSE;
 	    }*/
-	} 	
+	}
+	
+	/**
+	 * methods for channel control
+	 **/
+	command bool RadioModule.getChannelState() {
+		return channelIsBusy;
+	}
+	
+	command void RadioModule.setChannelState(bool state) {
+		channelIsBusy = state;
+	}
+	
 }
