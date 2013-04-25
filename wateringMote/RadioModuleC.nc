@@ -27,14 +27,28 @@ implementation {
 	uint32_t tServer; 
 	message_t packet;
 	bool channelIsBusy;
-  
+	
+	// == Log Variables ==
+	uint16_t totalBytesSent;
+	uint16_t totalBytesRecv;
+	//relogio logico de envio e recepcao de mensagens 
+	uint16_t radioTimesatamp;
+	bool logInit;
+	// ===================
+
 	bool firstSend;
 
   event void Boot.booted() {
-		firstSend = TRUE;
-		tServer = 100000; 		//Default Value
-		channelIsBusy = FALSE;
-   
+	
+	firstSend = TRUE; // Apenas para DEBUG, no fim tem de ser removido
+	
+	tServer = 100000; 		//Default Value
+	channelIsBusy = FALSE;
+   	totalBytesSent = 0;
+	totalBytesRecv = 0;
+	radioTimesatamp = 0;
+	logInit = FALSE;
+
     call AMControl.start();
     
     //dbg("out", "Mote %i fez Boot! \n", TOS_NODE_ID);
@@ -59,6 +73,101 @@ implementation {
       // do nothing, for now...
    }
 
+   	// log da mensagem de set Parameters que o mote recebeu ou enviou,
+	// 2param: 1=recebida, 0=enviada 
+	void logSetParametersMessage(radio_count_msg_t *pkt, int lenght, char *msgType, int IOstate){
+
+		char fileName[40];
+		char *state;
+		char setOperation[15];
+		FILE *file;
+		sprintf(fileName,"radioMoteLog/radioMoteLog_%d",TOS_NODE_ID);
+		file = fopen(fileName,"a");
+
+
+		radioTimesatamp++;
+
+		if(logInit == FALSE){
+			fprintf(file, "============= New File =============\n");	
+			logInit = TRUE;
+		}
+
+		if(IOstate == 1){	
+			state = "Recv";
+			totalBytesRecv = totalBytesRecv + lenght;	
+		}
+
+		if(IOstate == 0){	
+			state = "Sent";	
+			totalBytesSent = totalBytesSent + lenght;
+		}
+
+		switch(pkt->operationCode){
+			case 1 : sprintf(setOperation,"setTmeasure"); break;
+			case 2 : sprintf(setOperation,"setTserver"); break;
+			case 3 : sprintf(setOperation,"setWmax"); break;
+			case 4 : sprintf(setOperation,"setWmin"); break;
+			default : dbg("out", "[ERROR@RadioModule@logSetParametersMessage] OperationCode Invalid!\n"); break;
+		}
+
+		fprintf(file, ">> TS: %d \t [%s] [%s]\tMsgSize: %d TotalBytesRecv: %d\tTotalBytesSent: %d\tTotalBytes: %d\n",radioTimesatamp,state,msgType,lenght,totalBytesRecv,totalBytesSent,(totalBytesRecv+totalBytesSent) );	
+		fprintf(file, "\t\t\t Operation: %s NewValue: %d  DestMote: %d LastMote: %d TTL: %d\n",setOperation,pkt->paramValue,pkt->moteID,pkt->lastNodeID,pkt->packetTTL);	
+		
+		/*
+		nx_uint32_t paramValue;     // 4 bytes - timers configurados em milisegundos, numero é mto grande
+  		nx_uint8_t operationCode;   // 1 bytes
+  		nx_uint16_t moteID;         // 2 Bytes
+  		nx_uint16_t packetTTL;      // 2 bytes
+  		nx_uint16_t lastNodeID;     // 2 bytes
+		*/
+		fclose(file);
+
+	}
+
+
+
+   	// log da mensagem que o mote recebeu ou enviou, nao faz log do conteudo(leituras) da mensagem
+    // faz log do tamaho da mensagem do Timesatamp, e se foi recebida ou enviada.
+	// 2param: 1=recebida, 0=enviada 
+	void logTheMeasuresMessage(RadioMeasuresPacket *pkt, int lenght, char *msgType, int IOstate){
+		
+
+		/* == Log Variables ==
+		uint16_t totalBytesSent;
+		uint16_t totalBytesRecv;
+		//relogio logico de envio e recepcao de mensagens 
+		uint16_t radioTimesatamp;
+		bool logInit;
+		=================== */
+
+		char fileName[40];
+		FILE *file;
+		sprintf(fileName,"radioMoteLog/radioMoteLog_%d",TOS_NODE_ID);
+		file = fopen(fileName,"a");
+
+		radioTimesatamp++;
+
+		if(logInit == FALSE){
+			fprintf(file, "============= New File =============\n");	
+			logInit = TRUE;
+		}
+		
+		if(IOstate == 1){
+			//fprintf(file, "[%d]Recebi um pacote\n", TOS_NODE_ID);	
+			totalBytesRecv = totalBytesRecv + lenght;	
+			fprintf(file, ">> TS: %d \t [Recv] [%s]\tMsgSize: %d TotalBytesRecv: %d\tTotalBytesSent: %d\tTotalBytes: %d\n",radioTimesatamp,msgType,lenght,totalBytesRecv,totalBytesSent,(totalBytesRecv+totalBytesSent) );	
+			fprintf(file, "\t\t\t SrcMote: %d LastMote: %d  #Measures: %d TTL: %d\n",pkt->srcNodeId,pkt->lastNodeId,pkt->measuresIndex,pkt->packetTTL);	
+		}
+		
+		if(IOstate == 0){
+			//fprintf(file, "[%d]Enviei um pacote\n", TOS_NODE_ID);	
+			totalBytesSent = totalBytesSent + lenght;
+			fprintf(file, ">> TS: %d \t [Sent] [%s]\tMsgSize: %d TotalBytesRecv: %d\tTotalBytesSent: %d\tTotalBytes: %d\n",radioTimesatamp,msgType,lenght,totalBytesRecv,totalBytesSent,(totalBytesRecv+totalBytesSent) );	
+			fprintf(file, "\t\t\t SrcMote: %d LastMote: %d  #Measures: %d TTL: %d\n",pkt->srcNodeId,pkt->lastNodeId,pkt->measuresIndex,pkt->packetTTL);	
+		}
+
+		fclose(file);
+	}
 
     //Samuel, estva a fazer esta funcao antes de te enviar o codigo
    	//esta funcao ainda nao esta completa e o que ela faz é difundiar umma mensagem com a ultima leitura do sensor,
@@ -85,6 +194,7 @@ implementation {
 			
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
+	 			logTheMeasuresMessage(rmp,sizeof(*rmp),"Measures",0); // 2param: 1=recebida, 0=enviada
         	}		
 		}
 	}
@@ -95,6 +205,7 @@ implementation {
         	//dbg("out", "Enviei mensagem(tirei lock do channel)\n");
       	}
     }
+
 
   	// Aux Function
  	void processSetParameterMsg(radio_count_msg_t* pkt){
@@ -111,21 +222,23 @@ implementation {
 		}
 		if(operationCode == 2){ //set tServer
 	    	dbg("out", "Recebi setParametersMsg -> setTserver\n");
-			tServer = paramValue;
-      		call Timer.startPeriodic(tServer); //Restart timer com novo tServer
-			//dbg("out", "RadioModule says: Actualizei tServer = %d \n",call Timer.getdt());	//DEBUG
+			
+			//evita execucao de mensagens setParameters repetidas
+			if(tServer != paramValue){
+				tServer = paramValue;
+	      		call Timer.startPeriodic(tServer); //Restart timer com novo tServer
+				dbg("out", "RadioModule: tServer updated = %d \n",tServer);	//DEBUG
+			}
 			return;
 		}
 		if(operationCode == 3){ //set wmax
 	    	dbg("out", "Recebi setParametersMsg -> setWmax\n");
 			call IrrigationSystem.setWmax(paramValue);
-			//TODO process request
 			return;
 		}
 		if(operationCode == 4){ //set wmin
 	    	dbg("out", "Recebi setParametersMsg -> setWmin\n");
 	    	call IrrigationSystem.setWmin(paramValue);
-			//TODO process request
 			return;
 		}
 
@@ -134,6 +247,38 @@ implementation {
 		return;
 	}
 
+	void routeSetParametersMessage(radio_count_msg_t* pktRcv){
+	   	//dbg("out", "Received *setParametersMsg* from Server----------------------\n"); //DEBUG
+	 	//dbg("out","DUMP: pv: %d opC: %d destID: %d lastID: %d ttl: %d\n", pkt->paramValue,pkt->operationCode,pkt->moteID,pkt->lastNodeID,pkt->packetTTL);
+
+		radio_count_msg_t *pktSnd;
+		
+		if(!channelIsBusy && (pktRcv->packetTTL >= 1)){
+
+			pktSnd = (radio_count_msg_t*) (call Packet.getPayload(&packet, sizeof (radio_count_msg_t)));
+			
+			pktSnd->paramValue = pktRcv->paramValue;
+			pktSnd->operationCode = pktRcv->operationCode;
+			pktSnd->moteID = pktRcv->moteID;
+			pktSnd->packetTTL = (pktRcv->packetTTL - 1);
+			pktSnd->lastNodeID = TOS_NODE_ID;
+
+			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(radio_count_msg_t)) == SUCCESS) {
+				logSetParametersMessage(pktSnd,sizeof(*pktSnd),"SetParameter(R)", 0);
+          		channelIsBusy = TRUE;
+        	}	
+		}
+
+		/*
+		nx_uint32_t paramValue;     // 4 bytes - timers configurados em milisegundos, numero é mto grande
+  		nx_uint8_t operationCode;   // 1 bytes
+  		nx_uint16_t moteID;         // 2 Bytes
+  		nx_uint16_t packetTTL;      // 2 bytes
+  		nx_uint16_t lastNodeID;     // 2 bytes
+		*/
+	}
+
+	// route the Measures Message
 	void routeTheMessage(void* payload){
 		
 		int i;
@@ -151,7 +296,6 @@ implementation {
 			return;
 		}
 
-
 		if(!channelIsBusy){
 		
 			pktSnd->srcNodeId = pktRcv->srcNodeId;
@@ -166,47 +310,55 @@ implementation {
 			
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
+	 			logTheMeasuresMessage(pktSnd,sizeof(*pktSnd),"Meas.(R)",0); 		// 2param: 1=recebida, 0=enviada        		
         	}	
 		}
 
-		/*
-		  nx_uint16_t	srcNodeId;			// 2 bytes
-		  nx_uint16_t	lastNodeId;			// 2 bytes
-		  nx_uint8_t	measures[7];		// 7 bytes
-		  nx_uint16_t	measuresTS[7];		// 14 bytes
-		  nx_uint8_t	measuresIndex;		// 1 byte
-		  nx_uint16_t	packetTTL;			// 2 bytes
-		*/
 	}
 
 
 	event message_t* Receive.receive(message_t* bufPtr, void* payload, uint8_t len) {
 	    
 		radio_count_msg_t* pkt;		
-	 	
 	 	//Recebeu mensagem do servidor
 	 	if(len == sizeof(radio_count_msg_t)){
-	    	//dbg("out", "Received *setParametersMsg* from Server\n"); //DEBUG
+	    	
 	 		pkt = (radio_count_msg_t*)payload;
-	 		processSetParameterMsg(pkt);
-	 	}
+	    	
+	    	//DEBUG
+	    	//dbg("out", "Received *setParametersMsg* from Server----------------------\n"); //DEBUG
+	 		//dbg("out","DUMP: pv: %d opC: %d destID: %d lastID: %d ttl: %d\n", pkt->paramValue,pkt->operationCode,pkt->moteID,pkt->lastNodeID,pkt->packetTTL);
 
+	 		if(pkt->moteID == TOS_NODE_ID){
+		    	//dbg("out", "Recebi setParamsMsg que é para mim. Vou processa-la! ----------------------\n"); //DEBUG
+	 			
+	 			// 3param: 1=recebida, 0=enviada
+				logSetParametersMessage(pkt,len,"SetParam.(this)", 1);
+	 			processSetParameterMsg(pkt);
+	 		}
+	 		else{
+		    	//dbg("out", "Recebi setParamsMsg que NAO é para mim. Vou reenvia-la com TTL--! ----------------------\n"); //DEBUG
+				logSetParametersMessage(pkt,len," SetParameters ", 1);
+	 			routeSetParametersMessage(pkt);
+	 		}
+	 	}
+	 	//Recebeu, de outro mote, mensagem com medições
 	 	if(len == sizeof(RadioMeasuresPacket)){
+			
+			RadioMeasuresPacket *pkt = (RadioMeasuresPacket*) payload;	
 	    	   	
 	 		if(TOS_NODE_ID == 0){
 	 			
 	 			//DEBUG	
-				RadioMeasuresPacket *pktRcv = (RadioMeasuresPacket*) payload;	
-	    		dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pktRcv->srcNodeId,pktRcv->lastNodeId,pktRcv->packetTTL);
-	 		
-	 			// TODO: Log da Mensagem Recebida
-	 			// TODO: Log das Medições da Rede
+	    		dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pkt->srcNodeId,pkt->lastNodeId,pkt->packetTTL);
+	 			// 2param: 1=recebida, 0=enviada
+	 			logTheMeasuresMessage(pkt,len,"Meas.(R)",1);
+	 			
 	 		}
 	 		else{
-	 			// TODO: Log da Mensagem Recebida
-	 			
-	 			// Reencaminhar Mensagem (routing)
-	 			routeTheMessage(payload);
+	 			// 2param: 1=recebida, 0=enviada
+	 			logTheMeasuresMessage(pkt,len,"Meas.(R)",1);
+	 			routeTheMessage(payload); 	
 	 		}
 	 	}
 	 	return bufPtr;
