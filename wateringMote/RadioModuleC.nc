@@ -69,7 +69,10 @@ implementation {
 		RadioMeasuresPacket *rmp;
 		//dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
 
-		if(!channelIsBusy && TOS_NODE_ID == 5 && firstSend == TRUE){
+		// Samuel, Atencao: 2 e 3 condicao do IF serverm apenas para debug
+		// apenas o mote 1 envia leituras, e só as envia uma vez!
+		// assim so se tem "uma" mensagem a navegar na rede.
+		if(!channelIsBusy && TOS_NODE_ID == 1 && firstSend == TRUE){
 			firstSend = FALSE;
 			rmp = (RadioMeasuresPacket*)(call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
 			
@@ -142,7 +145,7 @@ implementation {
 	    //DEBUG
 	    dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pktRcv->srcNodeId,pktRcv->lastNodeId,pktRcv->packetTTL);
 		
-		if((pktRcv->packetTTL <= 0) || (pktRcv->lastNodeId == TOS_NODE_ID)){
+		if((pktRcv->packetTTL < 1) || (pktRcv->lastNodeId == TOS_NODE_ID)){
 			//TTL expirou, nao reenvia mensagem
 			//Este Mote foi o ultimo a reenviar mesnsagem, nao a volta a reenviar
 			return;

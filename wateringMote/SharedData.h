@@ -10,7 +10,7 @@ typedef nx_struct RadioMeasuresPacket {
   nx_uint16_t	lastNodeId;			// 2 bytes
   nx_uint8_t	measures[7];		// 7 bytes
   nx_uint16_t	measuresTS[7];		// 14 bytes
-  nx_uint8_t	measuresIndex;		// 1 byte aonta para a primeira posição livre do vector (C Style)
+  nx_uint8_t	measuresIndex;		// 1 byte aponta para a primeira posição livre do vector (C Style)
   nx_uint16_t	packetTTL;			// 2 bytes
 } RadioMeasuresPacket;				// Total: 28 Bytes
 
