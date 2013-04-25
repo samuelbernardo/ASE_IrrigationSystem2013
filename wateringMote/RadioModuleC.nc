@@ -1,6 +1,7 @@
 #include "Timer.h"
 #include "SharedData.h"
 
+#define	BUFFER_SIZE	10
 
 module RadioModuleC @safe() {
 
@@ -28,15 +29,16 @@ implementation {
 	message_t packet;
 	bool channelIsBusy;
 	
+	bool firstSend;
+	
 	// == Log Variables ==
 	uint16_t totalBytesSent;
 	uint16_t totalBytesRecv;
 	//relogio logico de envio e recepcao de mensagens 
 	uint16_t radioTimesatamp;
 	bool logInit;
+	
 	// ===================
-
-	bool firstSend;
 	
 	/**
 	 * Server variables initialization
@@ -44,11 +46,29 @@ implementation {
 	MeasuresControl measuresControl[__TOTAL_NODES_NUMBER__];
 	uint16_t numNodes;
 	
+	// == Aux Buffers ===
+	uint8_t mBufferAux[BUFFER_SIZE];
+	uint16_t mTSBufferAux[BUFFER_SIZE];
+	uint16_t mBufferIndexAux;
+	//===================
+
+	//-----------------------------------------------------------
+
+
+	void initBuffers(){
+		int i=0;
+		mBufferIndexAux = 0;
+		for(i = 0; i < BUFFER_SIZE; i++){
+			mBufferAux[i]=0;
+			mTSBufferAux[i]=0;
+		}
+	}
+	
 
   event void Boot.booted() {
 	firstSend = TRUE; // Apenas para DEBUG, no fim tem de ser removido
 	
-	tServer = 100000; 		//Default Value
+	tServer = 9000; 		//Default Value
 	channelIsBusy = FALSE;
    	totalBytesSent = 0;
 	totalBytesRecv = 0;
@@ -69,10 +89,11 @@ implementation {
 		fprintf(measuresFile, "Node id\t\tTimestamp\tMeasure\n");
 		fclose(measuresFile);
 	}
-   
+	
+	initBuffers();
+
     call AMControl.start();
     
-    //dbg("out", "Mote %i fez Boot! \n", TOS_NODE_ID);
 	dbg("out", "Radio Has Booted \n");
   }
 
@@ -91,7 +112,10 @@ implementation {
   }
   
    event void Timer.fired() {
-      // do nothing, for now...
+		//dbg("out", "RadioTimerFire! \n");
+   		mBufferIndexAux =  call IrrigationSystem.getMeasures(mBufferAux, mTSBufferAux);
+   		call RadioModule.sendMeasure(mBufferAux, mTSBufferAux, mBufferIndexAux);
+   		mBufferIndexAux = 0;
    }
 
    	// log da mensagem de set Parameters que o mote recebeu ou enviou,
@@ -235,23 +259,29 @@ implementation {
    	//esta funcao ainda nao esta completa e o que ela faz é difundiar umma mensagem com a ultima leitura do sensor,
     // depois de ter esta funcao testada e "estavel". o que ia fazer era enviar mensagens não com uma medida, 
     //  mas com muitas medidas (no máximo 7). Para aproveitar ao maximo o tamanho da packet. 
-	command void RadioModule.sendMeasure(uint8_t measure, uint16_t measureTS){
+	command void RadioModule.sendMeasure(uint8_t *measure, uint16_t *measureTS, uint8_t index){
 
+		int i;
 		RadioMeasuresPacket *rmp;
 		dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
 
 		// Nota: 2 e 3 condicao do IF serverm apenas para debug
 		// apenas o mote 1 envia leituras, e só as envia uma vez!
 		// assim so se tem "uma" mensagem a navegar na rede.
-		if(!channelIsBusy/* && TOS_NODE_ID == 1 && firstSend == TRUE*/){
+		if(!channelIsBusy && TOS_NODE_ID == 1  && firstSend == TRUE){
 			firstSend = FALSE;
+			
 			rmp = (RadioMeasuresPacket*)(call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
 			
 			rmp->srcNodeId = TOS_NODE_ID;
 			rmp->lastNodeId = TOS_NODE_ID;
-			rmp->measures[0] = measure;
-			rmp->measuresTS[0] = measureTS;
-			rmp->measuresIndex = 1;
+			
+			for(i=0; i<index; i++){
+				rmp->measures[i] = measure[i];
+				rmp->measuresTS[i] = measureTS[i];
+			}
+
+			rmp->measuresIndex = index;
 			rmp->packetTTL = call SyncProtocol.getTTLmax();
 			
  			// Log das medições de humidade no mote 0
@@ -259,6 +289,8 @@ implementation {
  				logMeasures(rmp);
  			}
 			
+			//DEBUG dbg("out", "M= %d TS= %d  \n", rmp->measures[0], rmp->measuresTS[0]);
+
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
 	 			logTheMeasuresMessage(rmp,sizeof(*rmp),"Measures",0); // 2param: 1=recebida, 0=enviada
