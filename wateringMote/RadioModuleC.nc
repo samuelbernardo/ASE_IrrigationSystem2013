@@ -190,6 +190,47 @@ implementation {
 		fclose(file);
 	}
 
+	
+	/**
+	 * Filter repeated messages
+	 **/
+	bool verifyNewMeasureMsg(RadioMeasuresPacket* measuresPkt) {
+		dbg("out","[verifyNewMeasureMsg]\nRadioMeasuresPacket: nodeId=%i\tmeasuresTS=%i\tmeasures=%i\nmeasuresControl[%i].measureTS=%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[0], measuresPkt->measures[0],measuresPkt->srcNodeId,measuresControl[measuresPkt->srcNodeId].measureTS);
+	
+		if(measuresControl[measuresPkt->srcNodeId].measureTS < measuresPkt->measuresTS[0]) {
+			measuresControl[measuresPkt->srcNodeId].measureTS = measuresPkt->measuresTS[0];
+			return TRUE;
+		}
+		
+		return FALSE;
+	}
+	
+	/**
+	 * Measures logging
+	 **/
+	void logMeasures(RadioMeasuresPacket* measuresPkt) {
+		uint8_t i, numMeasures;
+		FILE* measuresFile;
+		
+		dbg("out", "###############logMeasures begin\n");
+		
+		if(verifyNewMeasureMsg(measuresPkt)) {
+			
+			measuresFile = fopen("serverLog/measures.log","a+");
+			
+			numMeasures = measuresPkt->measuresIndex;
+			
+			for(i=0; i < numMeasures; i++) {
+				fprintf(measuresFile, "%i\t\t%i\t\t%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[i], measuresPkt->measures[i]);
+			}
+			
+			fclose(measuresFile);
+		}
+		
+		dbg("out", "###############logMeasures end\n");
+	}
+	
+	
     //Samuel, estva a fazer esta funcao antes de te enviar o codigo
    	//esta funcao ainda nao esta completa e o que ela faz é difundiar umma mensagem com a ultima leitura do sensor,
     // depois de ter esta funcao testada e "estavel". o que ia fazer era enviar mensagens não com uma medida, 
@@ -197,12 +238,12 @@ implementation {
 	command void RadioModule.sendMeasure(uint8_t measure, uint16_t measureTS){
 
 		RadioMeasuresPacket *rmp;
-		//dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
+		dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
 
 		// Nota: 2 e 3 condicao do IF serverm apenas para debug
 		// apenas o mote 1 envia leituras, e só as envia uma vez!
 		// assim so se tem "uma" mensagem a navegar na rede.
-		if(!channelIsBusy && TOS_NODE_ID == 1/* && firstSend == TRUE*/){
+		if(!channelIsBusy/* && TOS_NODE_ID == 1 && firstSend == TRUE*/){
 			firstSend = FALSE;
 			rmp = (RadioMeasuresPacket*)(call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
 			
@@ -212,6 +253,11 @@ implementation {
 			rmp->measuresTS[0] = measureTS;
 			rmp->measuresIndex = 1;
 			rmp->packetTTL = call SyncProtocol.getTTLmax();
+			
+ 			// Log das medições de humidade no mote 0
+ 			if(TOS_NODE_ID == 0) {
+ 				logMeasures(rmp);
+ 			}
 			
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
@@ -338,45 +384,6 @@ implementation {
 	}
 
 	
-	/**
-	 * Filter repeated messages
-	 **/
-	bool verifyNewMeasureMsg(RadioMeasuresPacket* measuresPkt) {
-		dbg("out","[verifyNewMeasureMsg]\nRadioMeasuresPacket: nodeId=%i\tmeasuresTS=%i\tmeasures=%i\nmeasuresControl[%i].measureTS=%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[0], measuresPkt->measures[0],measuresPkt->srcNodeId,measuresControl[measuresPkt->srcNodeId].measureTS);
-	
-		if(measuresControl[measuresPkt->srcNodeId].measureTS < measuresPkt->measuresTS[0]) {
-			measuresControl[measuresPkt->srcNodeId].measureTS = measuresPkt->measuresTS[0];
-			return TRUE;
-		}
-		
-		return FALSE;
-	}
-	
-	/**
-	 * Measures logging
-	 **/
-	void logMeasures(RadioMeasuresPacket* measuresPkt) {
-		uint8_t i, numMeasures;
-		FILE* measuresFile;
-		
-		dbg("out", "###############logMeasures begin\n");
-		
-		if(verifyNewMeasureMsg(measuresPkt)) {
-			
-			measuresFile = fopen("serverLog/measures.log","a+");
-			
-			numMeasures = measuresPkt->measuresIndex;
-			
-			for(i=0; i < numMeasures; i++) {
-				fprintf(measuresFile, "%i\t\t%i\t\t%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[i], measuresPkt->measures[i]);
-			}
-			
-			fclose(measuresFile);
-		}
-		
-		dbg("out", "###############logMeasures end\n");
-	}
-
 	event message_t* Receive.receive(message_t* bufPtr, void* payload, uint8_t len) {
 	    		
 	 	//Recebeu mensagem do servidor

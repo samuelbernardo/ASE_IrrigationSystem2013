@@ -78,7 +78,7 @@ typedef nx_struct TTLsyncMsg {
       // DEBUG: apenas o mote'0' envia mensagens
       if(!(call RadioModule.getChannelState()) && moteID != 0 && btrpkt->ttl > 1) {
 				
-				if(btrpkt->numHopsToServer < ttl_max || ts < btrpkt->syncTS) {
+				if(btrpkt->numHopsToServer < ttl_max || ts > btrpkt->syncTS) {
 					ttl_max = btrpkt->numHopsToServer;
 					ts = btrpkt->syncTS;
 					dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
@@ -87,8 +87,9 @@ typedef nx_struct TTLsyncMsg {
 						call RadioModule.setChannelState(TRUE);
 					}
 				}
-				else if(ts > btrpkt->syncTS) {
+				else if(ts < btrpkt->syncTS) {
 					dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e timestamp=%i\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS);
+					ts = btrpkt->syncTS;
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
 						call RadioModule.setChannelState(TRUE);
