@@ -68,7 +68,6 @@ typedef nx_struct TTLsyncMsg {
     }
 
 		void ttlUpdate(TTLsyncMsg* btrpkt) {
-			ts = btrpkt->syncTS;
 			btrpkt->ttl--;
 			btrpkt->numHopsToServer++;
 			btrpkt->lastNode = moteID;
@@ -79,13 +78,24 @@ typedef nx_struct TTLsyncMsg {
       // DEBUG: apenas o mote'0' envia mensagens
       if(!(call RadioModule.getChannelState()) && moteID != 0 && btrpkt->ttl > 1) {
 				
-				if(btrpkt->numHopsToServer <= ttl_max || ts < btrpkt->syncTS) {
+				if(btrpkt->numHopsToServer < ttl_max || ts < btrpkt->syncTS) {
 					ttl_max = btrpkt->numHopsToServer;
-					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
+					ts = btrpkt->syncTS;
+					dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
 						call RadioModule.setChannelState(TRUE);
 					}
+				}
+				else if(ts > btrpkt->syncTS) {
+					dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e timestamp=%i\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS);
+					ttlUpdate(btrpkt);
+					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
+						call RadioModule.setChannelState(TRUE);
+					}
+				}
+				else {
+					dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e não foi reenviada por ter timestamp=%i igual ao actual %i.\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS, ts);
 				}
 
       }
@@ -160,19 +170,25 @@ typedef nx_struct TTLsyncMsg {
      * Comando a ser lançando após o arranque de AMcontrol
      **/
     command void SyncProtocol.sendControlMsg() {
-		FILE *msgOut;
-		
-		counter = 0;
 		moteID = TOS_NODE_ID;
 		
-		msgOut = fopen("serverLog/syncMSG.log", "w");
-		fprintf(msgOut, "========= Network shortest path algorithm initialized =========\n\n");
-		fclose(msgOut);
-					
-		enviarMsgControlo();
-		call Timer0.startPeriodic(__TIMER_PERIOD_MILLI__);
-		
-		dbg("out", "Mote %i vai enviar nova mensagem do protocolo de sincronização! \n", moteID);
+		if(TOS_NODE_ID == 0) {
+			FILE *msgOut;
+			
+			counter = 0;
+			
+			msgOut = fopen("serverLog/syncMSG.log", "w");
+			fprintf(msgOut, "========= Network shortest path algorithm initialized =========\n\n");
+			fclose(msgOut);
+						
+			enviarMsgControlo();
+			call Timer0.startPeriodic(__TIMER_PERIOD_MILLI__);
+			
+			dbg("out", "Mote %i vai enviar nova mensagem do protocolo de sincronização! \n", TOS_NODE_ID);
+		}
+		else {
+			dbg("out", "Mote %i executou command void SyncProtocol.sendControlMsg() sem enviar mensagem! (não sendo o mote0 está correcto)\n", TOS_NODE_ID);
+		}
 	}
 		
  }

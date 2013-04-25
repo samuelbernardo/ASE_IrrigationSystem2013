@@ -58,24 +58,26 @@ def createNetworkTopology():
 	print "[DONE]"
 	return
 
-def sendSetParametersMsg(moteIDtoSend,paramValue,opCode):
+# DEPRECATED def sendSetParametersMsg(moteIDtoSend,paramValue,opCode):
+def sendSetParametersMsg(moteIDtoSend,paramValue,opCode,ttl):
 	''' === CODE UNDER TEST === '''
 	print "Prepare to Deliver"
 	msg = RadioSetParametersPacket()
+	
 	msg.set_paramValue(paramValue)
 	msg.set_operationCode(opCode)
-	#msg.set_moteID(moteID)			#Campo NAO necessario
-	#msg.set_packetTTL(ttl)			#Campo NAO necessario
-	#msg.set_lastNodeID(lastMoteID)	#Campo NAO necessario
+	msg.set_moteID(moteIDtoSend)			
+	msg.set_packetTTL(ttl)			
+	msg.set_lastNodeID(0)	
 
 	pkt = t.newPacket()
 
 	pkt.setData(msg.data)
 	pkt.setType(msg.get_amType())
-	pkt.setDestination(moteIDtoSend)
+	pkt.setDestination(0) #Servirdor envia sempre mensagens para Mote0
 
-	print "Delivering " + str(msg) + " to" +str(moteIDtoSend)+" at " + str(t.time())
-	pkt.deliverNow(moteIDtoSend)
+	print "Delivering " + str(msg) + " to" +str(moteIDtoSend)+" by Mote0"
+	pkt.deliverNow(0)
 	print "Deliver done"
 	''' =================== '''
 # --------------------------------------------	
@@ -119,19 +121,10 @@ for i in range(100) :
 # 2 setTserver
 # 3 setWmax
 # 4 setWmin
-sendSetParametersMsg(0,70000,2)
-'''
-sendSetParametersMsg(0,17,1)
-sendSetParametersMsg(0,19,3)
-sendSetParametersMsg(0,70,4)
-'''
 
-sendSetParametersMsg(1,40000,2)
-'''
-sendSetParametersMsg(1,11,1)
-sendSetParametersMsg(1,23,3)
-sendSetParametersMsg(1,60,4)
-'''
+#def sendSetParametersMsg(moteIDtoSend,paramValue,opCode,ttl):
+sendSetParametersMsg(2,3000,1,6)
+
 
 '''
 for counter in range (1,counterMax):

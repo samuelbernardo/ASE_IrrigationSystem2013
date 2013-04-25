@@ -1,6 +1,6 @@
 #include "SharedData.h"
 
-#define	BUFFER_SIZE	1000
+#define	BUFFER_SIZE	10
 
 module IrrigationSystemC @safe()
 {
@@ -41,13 +41,17 @@ implementation
 	}
 
 	command void IrrigationSystem.setWmax(uint8_t max){
-		wmax = max;
-		//dbg("out", "IrrigationSystem says: Actualizei Wmax = %d\n",wmax);	//DEBUG
+		if(wmax != max){
+			wmax = max;
+			dbg("out", "IrrigationSystem: Wmax updated = %d \n",wmax);	//DEBUG
+		}
 	}
 
 	command void IrrigationSystem.setWmin(uint8_t min){
-		wmin = min;
-		//dbg("out", "IrrigationSystem says: Actualizei Wmin = %d\n",wmin);	//DEBUG
+		if(wmin != min){
+			wmin = min;
+			dbg("out", "IrrigationSystem: Wmin updated = %d \n",wmin);	//DEBUG
+		}
 	}
 
 	command bool IrrigationSystem.getMeasures(RadioMeasuresPacket *pkt){
@@ -94,7 +98,10 @@ implementation
 		 	call WaterValveActuator.openValve();
 		}
 
-		call RadioModule.sendMeasure(newMeasure, measureTimestamp);
+		// *******************************************************
+		// MOTE NAO ESTA A ENVIAR MEDICOES PORQUE ESTOU A TESTAR o "SET PARAMETERS"
+		// call RadioModule.sendMeasure(newMeasure, measureTimestamp);
+		//*********************************************************
 
 		//DEBUG print
 		//dbg("out", "Catch Measure: v=%i, ts=%i, b=%i\n", newMeasure, measureTimestamp, bufferIndex);

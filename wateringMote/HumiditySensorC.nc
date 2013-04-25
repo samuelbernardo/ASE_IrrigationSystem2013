@@ -19,9 +19,14 @@ implementation
 
 	
 	command void HumiditySensor.setTmeasure(uint16_t tm){		
-		tMeasure = tm;
-		call Timer.startPeriodic(tMeasure);
-		//dbg("out", "HumiditySensor says: Actualizei tMeasure = %d\n",tMeasure); //DEBUG	
+		
+		//evita que mote ao receber mensagens repetidas de set parameter
+		// esteja a fazer setParameter repetidos!
+		if(tm != tMeasure){
+			tMeasure = tm;
+			call Timer.startPeriodic(tMeasure);
+			dbg("out", "HumiditySensor: tMeasure updated = %d\n",tMeasure); //DEBUG	
+		}
 	}
 
 	command uint16_t HumiditySensor.getTimer(){
