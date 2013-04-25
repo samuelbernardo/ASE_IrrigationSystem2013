@@ -130,7 +130,7 @@ typedef nx_struct TTLsyncMsg {
 				else {
 					
 					FILE *msgOut;
-					msgOut = fopen("configFiles/messages.log", "a+");
+					msgOut = fopen("serverLog/syncMSG.log", "a+");
 					fprintf(msgOut, "Recebi mensagem do mote lastNode=%i, com timestamp= %i, numHopsToServer = %i, ttl = %i \n", btrpkt->lastNode, btrpkt->syncTS, btrpkt->numHopsToServer, btrpkt->ttl);
 					fclose(msgOut);
 					
@@ -160,13 +160,19 @@ typedef nx_struct TTLsyncMsg {
      * Comando a ser lançando após o arranque de AMcontrol
      **/
     command void SyncProtocol.sendControlMsg() {
-			counter = 0;
-			moteID = TOS_NODE_ID;
-						
-			enviarMsgControlo();
-			call Timer0.startPeriodic(__TIMER_PERIOD_MILLI__);
-			
-			dbg("out", "Mote %i vai enviar nova mensagem do protocolo de sincronização! \n", moteID);
-		}
+		FILE *msgOut;
+		
+		counter = 0;
+		moteID = TOS_NODE_ID;
+		
+		msgOut = fopen("serverLog/syncMSG.log", "w");
+		fprintf(msgOut, "========= Network shortest path algorithm initialized =========\n\n");
+		fclose(msgOut);
+					
+		enviarMsgControlo();
+		call Timer0.startPeriodic(__TIMER_PERIOD_MILLI__);
+		
+		dbg("out", "Mote %i vai enviar nova mensagem do protocolo de sincronização! \n", moteID);
+	}
 		
  }

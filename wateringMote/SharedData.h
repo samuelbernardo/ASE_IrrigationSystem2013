@@ -1,6 +1,8 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
+#define __TOTAL_NODES_NUMBER__ 6
+
 // ========================================
 // Nota: MaxSize desta estrutura = 28 Bytes
 // ========================================
@@ -45,5 +47,10 @@ typedef nx_struct radio_count_msg {
 enum {
   AM_RADIO_COUNT_MSG = 6,
 };
+
+// measure messages filtering control
+typedef nx_struct MeasuresControl {
+	nx_uint16_t measureTS;
+} MeasuresControl;
 
 #endif
