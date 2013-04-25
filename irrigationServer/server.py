@@ -123,7 +123,7 @@ for i in range(100) :
 # 4 setWmin
 
 #def sendSetParametersMsg(moteIDtoSend,paramValue,opCode,ttl):
-sendSetParametersMsg(2,3000,1,6)
+#sendSetParametersMsg(2,100,1,6)
 
 
 '''

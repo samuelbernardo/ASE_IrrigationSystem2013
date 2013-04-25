@@ -1,6 +1,8 @@
 #include "SharedData.h"
 
 #define	BUFFER_SIZE	10
+#define	MSG_MAX_MEASURES 7
+
 
 module IrrigationSystemC @safe()
 {
@@ -54,19 +56,16 @@ implementation
 		}
 	}
 
-	command bool IrrigationSystem.getMeasures(RadioMeasuresPacket *pkt){
-		//TODO
-		/*Preencher a packet com as leituras, existentes nos buffers
-		 * as leituras que forem colocadas nesta packet, têm de ser apagadas
-		 * do mesuresBuffer = decrementar bufferIndexe
-		 *
-		 *	retorna TRUE se todas as measures vão na packet => bufferIndex = 0
-		 *	retorna FALSE se houve measures "recentes" que nao couberam na packet => bufferIndex > 0 
-		 * 			neste caso, o Radio Module tem de voltar a chamar o getMeasures 
-		 *			para que se coloquem as medicoes que nao couberam na packet anterior
-		 */
-
-		return TRUE;
+	command uint16_t IrrigationSystem.getMeasures(uint8_t *measuresBuf, uint16_t *measuresTSBuf){
+		int i;
+		uint16_t res;
+		for(i=0;i<bufferIndex;i++){
+			measuresBuf[i] = measuresBuffer[i];
+			measuresTSBuffer[i] = measuresTSBuffer[i];
+		}
+		res = bufferIndex;
+		bufferIndex=0;
+		return res;
 	}
 
 	event void Boot.booted(){
@@ -80,14 +79,7 @@ implementation
 	/* Handler do evento gerado pelo HumiditySensor */ 
 	event void HumiditySensor.newMeasure(uint8_t newMeasure, uint16_t measureTimestamp){
 		
-		// FixMe: Atencao, temde se corrigir a situcao em que bufferIndex > BUFFER_SIZE
-		// solucao tem de passar por esquema tipo round-robin
-		/* FIXE THIS CODE!
-		measuresBuffer[bufferIndex] = newMeasure;
-		measuresTSBuffer[bufferIndex] = measureTimestamp;
-		bufferIndex++;
-		*/
-
+		//--- Codigo Estavel ---------------------------
 		lastMeeasure = newMeasure;
 		lastMeeasureTS = measureTimestamp;
 
@@ -100,11 +92,26 @@ implementation
 
 		// *******************************************************
 		// MOTE NAO ESTA A ENVIAR MEDICOES PORQUE ESTOU A TESTAR o "SET PARAMETERS"
-		// call RadioModule.sendMeasure(newMeasure, measureTimestamp);
+		//call RadioModule.sendMeasure(newMeasure, measureTimestamp);
 		//*********************************************************
 
 		//DEBUG print
 		//dbg("out", "Catch Measure: v=%i, ts=%i, b=%i\n", newMeasure, measureTimestamp, bufferIndex);
+		//------------------------------------------------	
+			
+		measuresBuffer[bufferIndex] = newMeasure;
+		measuresTSBuffer[bufferIndex] = measureTimestamp;
+		bufferIndex++;
+		
+		if(bufferIndex < MSG_MAX_MEASURES){ 
+			//dbg("out", "In->Buffer\n");
+			return;
+		}
+		else{
+			//dbg("out", "Free->Buffer Antes: %d\n",bufferIndex);
+			call RadioModule.sendMeasure(measuresBuffer, measuresTSBuffer, bufferIndex);
+			bufferIndex = 0;
+		}
 	}
 
 }
