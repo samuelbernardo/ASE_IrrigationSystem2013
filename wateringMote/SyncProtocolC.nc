@@ -88,7 +88,7 @@ typedef nx_struct TTLsyncMsg {
 					}
 				}
 				else if(ts < btrpkt->syncTS) {
-					dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e timestamp=%i\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS);
+					//dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e timestamp=%i\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS);
 					ts = btrpkt->syncTS;
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
@@ -96,7 +96,7 @@ typedef nx_struct TTLsyncMsg {
 					}
 				}
 				else {
-					dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e não foi reenviada por ter timestamp=%i igual ao actual %i.\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS, ts);
+					//dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e não foi reenviada por ter timestamp=%i igual ao actual %i.\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS, ts);
 				}
 
       }
@@ -105,9 +105,9 @@ typedef nx_struct TTLsyncMsg {
 
     event void AMSend.sendDone(message_t* msg, error_t error) {
       if ( &syncPathPkt == msg ) {
-				TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
-
-        dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
+		//TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
+        //dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
+        
         call RadioModule.setChannelState(FALSE);
       }
     }
@@ -123,18 +123,19 @@ typedef nx_struct TTLsyncMsg {
 				
 				if(moteID != 0) {
 					
-					dbg("out", "---------------------------------------\n");
-					dbg("out", "Recebi mensagem do mote lastNode=%i, com timestamp= %i, numHopsToServer = %i, ttl = %i \n", btrpkt->lastNode, btrpkt->syncTS, btrpkt->numHopsToServer, btrpkt->ttl);
+					//dbg("out", "---------------------------------------\n");
+					//dbg("out", "Recebi mensagem do mote lastNode=%i, com timestamp= %i, numHopsToServer = %i, ttl = %i \n", btrpkt->lastNode, btrpkt->syncTS, btrpkt->numHopsToServer, btrpkt->ttl);
 					
 					if(reenviar == TRUE) {
-						dbg("out", "\n vou reenviar este pacote\n");
+						//dbg("out", "\n vou reenviar este pacote\n");
 						// REENVIAR MENSAGEM----------------------------------------------------------------
 						reenviarMsgControlo(&syncPathPkt, btrpkt);
 						// FIM REENVIAR MENSAGEM------------------------------------------------------------
 					}
-					else
-						dbg("out", "\n NAO vou reenviar este pacote\n");
-					dbg("out", "**** END OF DUMP *****\n");
+					else {
+						//dbg("out", "\n NAO vou reenviar este pacote\n");
+					}
+					//dbg("out", "**** END OF DUMP *****\n");
 					
 				}
 				
@@ -185,10 +186,10 @@ typedef nx_struct TTLsyncMsg {
 			enviarMsgControlo();
 			call Timer0.startPeriodic(__TIMER_PERIOD_MILLI__);
 			
-			dbg("out", "Mote %i vai enviar nova mensagem do protocolo de sincronização! \n", TOS_NODE_ID);
+			//dbg("out", "Mote %i vai enviar nova mensagem do protocolo de sincronização! \n", TOS_NODE_ID);
 		}
 		else {
-			dbg("out", "Mote %i executou command void SyncProtocol.sendControlMsg() sem enviar mensagem! (não sendo o mote0 está correcto)\n", TOS_NODE_ID);
+			//dbg("out", "Mote %i executou command void SyncProtocol.sendControlMsg() sem enviar mensagem! (não sendo o mote0 está correcto)\n", TOS_NODE_ID);
 		}
 	}
 		

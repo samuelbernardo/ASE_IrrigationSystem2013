@@ -3,6 +3,9 @@ from TOSSIM import *
 import time
 from threading import Thread
 
+import cmd
+import string, sys
+
 # instanciar mensagens a serem injectadas na rede
 # pelo servidor
 from RadioSetParametersPacket import *
@@ -28,9 +31,10 @@ radio = t.radio()
 mac = t.mac()
 
 #Aux variables
-networkMap = "serverConfigFiles/networkTopology2.txt"
+networkMap = "serverConfigFiles/networkTopology3.txt"
 counterMax = 100
 timerStep = 1000
+
 
 # -------------------------------------------
 # Aux.Functions
@@ -82,63 +86,184 @@ def sendSetParametersMsg(moteIDtoSend,paramValue,opCode,ttl):
 	''' =================== '''
 # --------------------------------------------	
 
-# Temos de ligar pelo menos um boot,
-# caso contrario o runNextEvent vai retornar sempre False,
-# porque nao tem boots onde executar eventos
-m0 = t.getNode(0)
-m0.bootAtTime(1)
-
-m1 = t.getNode(1)
-m1.bootAtTime(1)
-
-m2 = t.getNode(2)
-m2.bootAtTime(1)
-
-m3 = t.getNode(3)
-m3.bootAtTime(1)
-
-m4 = t.getNode(4)
-m4.bootAtTime(1)
-
-m5 = t.getNode(5)
-m5.bootAtTime(1)
-
-
-#v = m.getVariable("ContadorTimerC.contador")
-
-createNetworkTopology()
-createMoteNoiseModel(m0)
-createMoteNoiseModel(m1)
-createMoteNoiseModel(m2)
-createMoteNoiseModel(m3)
-createMoteNoiseModel(m4)
-createMoteNoiseModel(m5)
-
-for i in range(100) :
-	t.runNextEvent()
-
-# 1 setTmeasure
-# 2 setTserver
-# 3 setWmax
-# 4 setWmin
-
-#def sendSetParametersMsg(moteIDtoSend,paramValue,opCode,ttl):
-#sendSetParametersMsg(2,100,1,6)
-
-
-'''
-for counter in range (1,counterMax):
-	print "valor do contador: %i " % (counter)
-	t.runNextEvent()
-	counter += 1
-	time = t.time()
-	while time + timerStep > t.time():
+def start():
+	# Temos de ligar pelo menos um boot,
+	# caso contrario o runNextEvent vai retornar sempre False,
+	# porque nao tem boots onde executar eventos
+	m0 = t.getNode(0)
+	m0.bootAtTime(1)
+	
+	m1 = t.getNode(1)
+	m1.bootAtTime(1)
+	
+	m2 = t.getNode(2)
+	m2.bootAtTime(1)
+	
+	m3 = t.getNode(3)
+	m3.bootAtTime(1)
+	
+	m4 = t.getNode(4)
+	m4.bootAtTime(1)
+	
+	m5 = t.getNode(5)
+	m5.bootAtTime(1)
+	
+	
+	#v = m.getVariable("ContadorTimerC.contador")
+	
+	createNetworkTopology()
+	createMoteNoiseModel(m0)
+	createMoteNoiseModel(m1)
+	createMoteNoiseModel(m2)
+	createMoteNoiseModel(m3)
+	createMoteNoiseModel(m4)
+	createMoteNoiseModel(m5)
+	
+	for i in range(100) :
 		t.runNextEvent()
-'''
+	
+	# 1 setTmeasure
+	# 2 setTserver
+	# 3 setWmax
+	# 4 setWmin
+	
+	#def sendSetParametersMsg(moteIDtoSend,paramValue,opCode,ttl):
+	#sendSetParametersMsg(2,100,1,6)
 
-while True :
-	time.sleep(0.0001)
-	t.runNextEvent()	
-	#counter = v.getData()
-	# Se descomentar este print fico com um resultado muita esquisito...
-	#print "valor do contador: %i " % (counter)
+
+def step(length):
+	'''
+	for counter in range (1,counterMax):
+		print "valor do contador: %i " % (counter)
+		t.runNextEvent()
+		counter += 1
+		time = t.time()
+		while time + timerStep > t.time():
+			t.runNextEvent()
+	'''
+	
+	for counter in range(length) :
+		time.sleep(0.0001)
+		t.runNextEvent()
+		# Se descomentar este print fico com um resultado muita esquisito...
+		#print "valor do contador: %i " % (counter)
+
+
+def moteTurnON(moteId):
+	m = t.getNode(moteId)
+	if not m.isOn():
+		m.turnOn()
+		
+def moteTurnOFF(moteId):
+	m = t.getNode(moteId)
+	if m.isOn():
+		m.turnOff()
+
+
+# -------------------------------------------
+# Command line definition
+class CLI(cmd.Cmd):
+
+	def __init__(self):
+		cmd.Cmd.__init__(self)
+		self.prompt = '> '
+
+	def do_quit(self, arg):
+		sys.exit(1)
+
+	def help_quit(self):
+		print "syntax: quit",
+		print "-- terminates the application"
+		
+	def do_run(self, arg):
+		print "starting simulation..."
+		start()
+		
+	def help_run(self):
+		print "syntax: run",
+		print "-- start the application"
+
+	def do_step(self, arg):
+		print "running..."
+		step(int(arg))
+		print "...pause"
+		
+	def help_step(self):
+		print "syntax: step <number of steps>",
+		print "-- continue simulation for the step number"
+
+	def do_moteTurnOn(self, arg):
+		moteTurnON(int(arg))
+		print "Mote "+arg+" have been turned on!"
+		
+	def help_moteTurnOn(self):
+		print "syntax: moteTurnOn <moteId>",
+		print "-- turn on mote with moteId"
+
+	def do_moteTurnOff(self, arg):
+		moteTurnON(int(arg))
+		print "Mote "+arg+" have been turned off!"
+		
+	def help_moteTurnOff(self):
+		print "syntax: moteTurnOff <moteId>",
+		print "-- turn off mote with moteId"
+		
+	def do_setWmax(self,args):
+		params = [int(arg) for arg in args.split(' ') if arg.strip()]
+		moteIDtoSend = params[0]
+		paramValue = params[1]
+		ttl = params[2]
+		sendSetParametersMsg(moteIDtoSend,paramValue,"setWmax",ttl)
+	
+	def help_setWmax(self):
+		print "syntax: setWmax <moteIDtoSend> <paramValue> <ttl>",
+		print "-- change Wmax parameter in indicated mote with ttl for sending message"
+	
+	def do_setWmin(self,args):
+		params = [int(arg) for arg in args.split(' ') if arg.strip()]
+		moteIDtoSend = params[0]
+		paramValue = params[1]
+		ttl = params[2]
+		sendSetParametersMsg(moteIDtoSend,paramValue,"setWmin",ttl)
+	
+	def help_setWmin(self):
+		print "syntax: setWmin <moteIDtoSend> <paramValue> <ttl>",
+		print "-- change Wmin parameter in indicated mote with ttl for sending message"
+	
+	def do_setTserver(self,args):
+		params = [int(arg) for arg in args.split(' ') if arg.strip()]
+		moteIDtoSend = params[0]
+		paramValue = params[1]
+		ttl = params[2]
+		sendSetParametersMsg(moteIDtoSend,paramValue,"setTserver",ttl)
+	
+	def help_setTserver(self):
+		print "syntax: setTserver <moteIDtoSend> <paramValue> <ttl>",
+		print "-- change Tserver parameter in indicated mote with ttl for sending message"
+		
+	def do_setTmeasure(self,args):
+		params = [int(arg) for arg in args.split(' ') if arg.strip()]
+		moteIDtoSend = params[0]
+		paramValue = params[1]
+		ttl = params[2]
+		sendSetParametersMsg(moteIDtoSend,paramValue,"setTmeasure",ttl)
+	
+	def help_setTmeasure(self):
+		print "syntax: setTmeasure <moteIDtoSend> <paramValue> <ttl>",
+		print "-- change Tmeasure parameter in indicated mote with ttl for sending message"
+
+	# shortcuts
+	do_q = do_quit
+	do_wmax = do_setWmax
+	do_wmin = do_setWmin
+	do_ts = do_setTserver
+	do_tm = do_setTmeasure
+	do_s = do_step
+	do_on = do_moteTurnOn
+	do_off = do_moteTurnOff
+
+#
+# run command line
+
+cli = CLI()
+cli.cmdloop()

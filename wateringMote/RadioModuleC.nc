@@ -219,7 +219,7 @@ implementation {
 	 * Filter repeated messages
 	 **/
 	bool verifyNewMeasureMsg(RadioMeasuresPacket* measuresPkt) {
-		dbg("out","[verifyNewMeasureMsg]\nRadioMeasuresPacket: nodeId=%i\tmeasuresTS=%i\tmeasures=%i\nmeasuresControl[%i].measureTS=%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[0], measuresPkt->measures[0],measuresPkt->srcNodeId,measuresControl[measuresPkt->srcNodeId].measureTS);
+		//dbg("out","[verifyNewMeasureMsg]\nRadioMeasuresPacket: nodeId=%i\tmeasuresTS=%i\tmeasures=%i\nmeasuresControl[%i].measureTS=%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[0], measuresPkt->measures[0],measuresPkt->srcNodeId,measuresControl[measuresPkt->srcNodeId].measureTS);
 	
 		if(measuresControl[measuresPkt->srcNodeId].measureTS < measuresPkt->measuresTS[0]) {
 			measuresControl[measuresPkt->srcNodeId].measureTS = measuresPkt->measuresTS[0];
@@ -236,7 +236,7 @@ implementation {
 		uint8_t i, numMeasures;
 		FILE* measuresFile;
 		
-		dbg("out", "###############logMeasures begin\n");
+		//dbg("out", "###############logMeasures begin\n");
 		
 		if(verifyNewMeasureMsg(measuresPkt)) {
 			
@@ -251,7 +251,7 @@ implementation {
 			fclose(measuresFile);
 		}
 		
-		dbg("out", "###############logMeasures end\n");
+		//dbg("out", "###############logMeasures end\n");
 	}
 	
 	
@@ -259,16 +259,16 @@ implementation {
    	//esta funcao ainda nao esta completa e o que ela faz é difundiar umma mensagem com a ultima leitura do sensor,
     // depois de ter esta funcao testada e "estavel". o que ia fazer era enviar mensagens não com uma medida, 
     //  mas com muitas medidas (no máximo 7). Para aproveitar ao maximo o tamanho da packet. 
-	command void RadioModule.sendMeasure(uint8_t *measure, uint16_t *measureTS, uint8_t index){
+	command void RadioModule.sendMeasure(uint8_t *measure, uint16_t *measureTS, uint8_t measureIndex){
 
 		int i;
 		RadioMeasuresPacket *rmp;
-		dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
+		//dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
 
 		// Nota: 2 e 3 condicao do IF serverm apenas para debug
 		// apenas o mote 1 envia leituras, e só as envia uma vez!
 		// assim so se tem "uma" mensagem a navegar na rede.
-		if(!channelIsBusy && TOS_NODE_ID == 1  && firstSend == TRUE){
+		if(!channelIsBusy/* && TOS_NODE_ID == 1  && firstSend == TRUE*/){
 			firstSend = FALSE;
 			
 			rmp = (RadioMeasuresPacket*)(call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
@@ -276,22 +276,21 @@ implementation {
 			rmp->srcNodeId = TOS_NODE_ID;
 			rmp->lastNodeId = TOS_NODE_ID;
 			
-			for(i=0; i<index; i++){
+			for(i=0; i<measureIndex; i++){
 				rmp->measures[i] = measure[i];
 				rmp->measuresTS[i] = measureTS[i];
 			}
 
-			rmp->measuresIndex = index;
+			rmp->measuresIndex = measureIndex;
 			rmp->packetTTL = call SyncProtocol.getTTLmax();
+			
+			//DEBUG dbg("out", "M= %d TS= %d  \n", rmp->measures[0], rmp->measuresTS[0]);
 			
  			// Log das medições de humidade no mote 0
  			if(TOS_NODE_ID == 0) {
  				logMeasures(rmp);
  			}
-			
-			//DEBUG dbg("out", "M= %d TS= %d  \n", rmp->measures[0], rmp->measuresTS[0]);
-
-			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
+			else if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
           		channelIsBusy = TRUE;
 	 			logTheMeasuresMessage(rmp,sizeof(*rmp),"Measures",0); // 2param: 1=recebida, 0=enviada
         	}		
@@ -315,33 +314,33 @@ implementation {
 		//uint16_t lastNodeID = pkt->lastNodeID;	//Campo NAO necessario
 
 		if(operationCode == 1){ //set tMeasure
-	    	dbg("out", "Recebi setParametersMsg -> setTmeasure\n");
+	    	//dbg("out", "Recebi setParametersMsg -> setTmeasure\n");
 			call IrrigationSystem.setTmeasure(paramValue);
 			return;
 		}
 		if(operationCode == 2){ //set tServer
-	    	dbg("out", "Recebi setParametersMsg -> setTserver\n");
+	    	//dbg("out", "Recebi setParametersMsg -> setTserver\n");
 			
 			//evita execucao de mensagens setParameters repetidas
 			if(tServer != paramValue){
 				tServer = paramValue;
 	      		call Timer.startPeriodic(tServer); //Restart timer com novo tServer
-				dbg("out", "RadioModule: tServer updated = %d \n",tServer);	//DEBUG
+				//dbg("out", "RadioModule: tServer updated = %d \n",tServer);	//DEBUG
 			}
 			return;
 		}
 		if(operationCode == 3){ //set wmax
-	    	dbg("out", "Recebi setParametersMsg -> setWmax\n");
+	    	//dbg("out", "Recebi setParametersMsg -> setWmax\n");
 			call IrrigationSystem.setWmax(paramValue);
 			return;
 		}
 		if(operationCode == 4){ //set wmin
-	    	dbg("out", "Recebi setParametersMsg -> setWmin\n");
+	    	//dbg("out", "Recebi setParametersMsg -> setWmin\n");
 	    	call IrrigationSystem.setWmin(paramValue);
 			return;
 		}
 
-	    dbg("out", "[ERROR] Received a *setParametersMsg* but operationCode is INVALID\n");
+	    //dbg("out", "[ERROR] Received a *setParametersMsg* but operationCode is INVALID\n");
 	    //dbg("out", "|%d|%d|%d|%d|%d| \n",paramValue,operationCode,moteID,packetTTL,lastNodeID); //DEBUG
 		return;
 	}
@@ -387,7 +386,7 @@ implementation {
 		RadioMeasuresPacket *pktSnd = (RadioMeasuresPacket*) (call Packet.getPayload(&packet, sizeof (RadioMeasuresPacket)));
 	    
 	    //DEBUG
-	    dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pktRcv->srcNodeId,pktRcv->lastNodeId,pktRcv->packetTTL);
+	    //dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pktRcv->srcNodeId,pktRcv->lastNodeId,pktRcv->packetTTL);
 		
 		if((pktRcv->packetTTL < 1) || (pktRcv->lastNodeId == TOS_NODE_ID)){
 			//TTL expirou, nao reenvia mensagem
@@ -451,7 +450,7 @@ implementation {
 	 			logMeasures(pkt);
 
 				// Log da Mensagem Recebida
-	    		dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pkt->srcNodeId,pkt->lastNodeId,pkt->packetTTL);
+	    		//dbg("out", "RcvRadioPkt src:%d last:%d ttl:%d\n",pkt->srcNodeId,pkt->lastNodeId,pkt->packetTTL);
 	 			// 2param: 1=recebida, 0=enviada
 	 			logTheMeasuresMessage(pkt,len,"Meas.(R)",1);
 	 			
