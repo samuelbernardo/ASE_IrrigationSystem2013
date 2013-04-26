@@ -1,5 +1,5 @@
  #define __NUM_MAX_MOTES__ 100
- #define __TIMER_PERIOD_MILLI__ 10000
+ #define __TIMER_PERIOD_MILLI__ 1000
 
  #include <Timer.h>
  #include <stdlib.h>
@@ -84,6 +84,38 @@ typedef nx_struct TTLsyncMsg {
     void reenviarMsgControlo(message_t* msg, TTLsyncMsg* btrpkt){
       // == REenviar PACOTES / ROUTING DE PACOTES == 
       // DEBUG: apenas o mote'0' envia mensagens
+      
+	if(!(call RadioModule.getChannelState()) && moteID != 0 && btrpkt->ttl > 1) {
+				
+				if(ts < btrpkt->syncTS) {
+					//dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e timestamp=%i\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS);
+					ttl_max = btrpkt->numHopsToServer;
+					ts = btrpkt->syncTS;
+					registarCalibracaoTTL(ttl_max,ts);
+					ttlUpdate(btrpkt);
+					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
+						call RadioModule.setChannelState(TRUE);
+					}
+				}
+				else if(btrpkt->numHopsToServer < ttl_max || ts > btrpkt->syncTS) {
+					
+					//E aqui que se afaz a calibraco do TTL
+					ttl_max = btrpkt->numHopsToServer;
+					ts = btrpkt->syncTS;
+					registarCalibracaoTTL(ttl_max,ts);
+
+					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
+					ttlUpdate(btrpkt);
+					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
+						call RadioModule.setChannelState(TRUE);
+					}
+				}
+				else {
+					//dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e não foi reenviada por ter timestamp=%i igual ao actual %i.\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS, ts);
+				}
+      }
+    
+    /*
       if(!(call RadioModule.getChannelState()) && moteID != 0 && btrpkt->ttl > 1) {
 				
 				if(btrpkt->numHopsToServer < ttl_max || ts > btrpkt->syncTS) {
@@ -112,7 +144,10 @@ typedef nx_struct TTLsyncMsg {
 					//dbg("out", "Não foi efectuada actualização de ttl_max para mensagem recebida do mote%i com numHopsToServer=%i e não foi reenviada por ter timestamp=%i igual ao actual %i.\n", btrpkt->lastNode, btrpkt->numHopsToServer, btrpkt->syncTS, ts);
 				}
 
-      }
+      }*/
+
+
+
     }
 
 

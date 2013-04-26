@@ -84,7 +84,7 @@ implementation {
 		
 		for(nodeId=0; nodeId < numNodes; nodeId++) {
 			measuresControl[nodeId].measureTS = 0;
-			measuresControl[nodeId].measureTScontrol = 2;
+			measuresControl[nodeId].measureTScontrol = __MEASURES_CONTROL__;
 			measuresControl[nodeId].measureTSlast = 0;
 			measuresControl[nodeId].measureTScounter = 0;
 		}

@@ -31,7 +31,7 @@ radio = t.radio()
 mac = t.mac()
 
 #Aux variables
-networkMap = "serverConfigFiles/networkTopology2.txt"
+networkMap = "serverConfigFiles/networkTopology6.txt"
 counterMax = 100
 timerStep = 1000
 
