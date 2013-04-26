@@ -92,15 +92,12 @@ implementation
 		 	call WaterValveActuator.openValve();
 		}
 
-		// *******************************************************
-		// MOTE NAO ESTA A ENVIAR MEDICOES PORQUE ESTOU A TESTAR o "SET PARAMETERS"
-		//call RadioModule.sendMeasure(newMeasure, measureTimestamp);
-		//*********************************************************
-
 		//DEBUG print
 		//dbg("out", "Catch Measure: v=%i, ts=%i, b=%i\n", newMeasure, measureTimestamp, bufferIndex);
-		//------------------------------------------------	
-			
+
+		if(newMeasure == 0)
+			dbg("out", "Humidity Senssor is Broken! [HumidityMeasure = 0]\n");
+		
 		measuresBuffer[bufferIndex] = newMeasure;
 		measuresTSBuffer[bufferIndex] = measureTimestamp;
 		bufferIndex++;

@@ -1,8 +1,8 @@
 Mote-0=50
 Mote-1=95
 Mote-2=52
-Mote-3=53
-Mote-4=54
+Mote-3=19
+Mote-4=98
 Mote-5=55
 Mote-1714=2825
 Mote-1988=2099

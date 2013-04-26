@@ -13,10 +13,12 @@ implementation
 	
 	bool isOpen; // Valve State
 	bool fileDontStarted;
+	bool valveIsBroken;
 
 	event void Boot.booted(){
 		isOpen = FALSE; //Default Value
 		fileDontStarted = TRUE;
+		valveIsBroken = FALSE;
 		dbg("out", "WaterValveActuator has Booted\n");
 	}
 
@@ -32,12 +34,15 @@ implementation
 			exit(0);
 		}
 
-		if(state == 0)
+		if(state == 0){
 			fprintf(file, "Mote-%d[Valve]=Close\n",moteID);
-		else
+		}
+		else{
 			fprintf(file, "Mote-%d[Valve]=Open\n",moteID);
+		}
 
 		fclose(file);
+
 	}	
 
 
@@ -45,8 +50,15 @@ implementation
 		if(!isOpen || fileDontStarted){
 			// 3param = 1 -> open valve
 			upadteValveState("configFiles/statesOfValves.txt", TOS_NODE_ID, 1);
-			isOpen = TRUE;
+			
+			if(!valveIsBroken){
+				isOpen = TRUE;
+			}
 			fileDontStarted = FALSE;
+			
+			if(!isOpen){
+				dbg("out", "Water Valve is Broken! Don't Open!");
+			}
 		}
 	}
 
@@ -54,12 +66,17 @@ implementation
 		if(isOpen || fileDontStarted){
 			// 3param = 0 -> close valve
 			upadteValveState("configFiles/statesOfValves.txt", TOS_NODE_ID, 0);
-			isOpen = FALSE;
+			
+			if(!valveIsBroken){
+				isOpen = FALSE;
+			}
 			fileDontStarted = FALSE;
+			
+			if(isOpen){
+				dbg("out", "Water Valve is Broken! Don't Close!");				
+			}
 		}
 	}
-
-	
 
 }
 
