@@ -1,5 +1,5 @@
  #define __NUM_MAX_MOTES__ 100
- #define __TIMER_PERIOD_MILLI__ 1000000
+ #define __TIMER_PERIOD_MILLI__ 100000
 
  #include <Timer.h>
  #include <stdlib.h>
@@ -81,7 +81,7 @@ typedef nx_struct TTLsyncMsg {
 				if(btrpkt->numHopsToServer < ttl_max || ts > btrpkt->syncTS) {
 					ttl_max = btrpkt->numHopsToServer;
 					ts = btrpkt->syncTS;
-					dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
+					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
 						call RadioModule.setChannelState(TRUE);
