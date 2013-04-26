@@ -112,13 +112,14 @@ def start():
 	#v = m.getVariable("ContadorTimerC.contador")
 	
 	createNetworkTopology()
+	
 	createMoteNoiseModel(m0)
 	createMoteNoiseModel(m1)
 	createMoteNoiseModel(m2)
 	createMoteNoiseModel(m3)
 	createMoteNoiseModel(m4)
 	createMoteNoiseModel(m5)
-	
+
 	for i in range(100) :
 		t.runNextEvent()
 	
@@ -143,7 +144,7 @@ def step(length):
 	'''
 	
 	for counter in range(length) :
-		time.sleep(0.0001)
+		#time.sleep(0.0001)				Fix: isto ja nao e' necessario
 		t.runNextEvent()
 		# Se descomentar este print fico com um resultado muita esquisito...
 		#print "valor do contador: %i " % (counter)
@@ -213,7 +214,8 @@ class CLI(cmd.Cmd):
 		moteIDtoSend = params[0]
 		paramValue = params[1]
 		ttl = params[2]
-		sendSetParametersMsg(moteIDtoSend,paramValue,"setWmax",ttl)
+		sendSetParametersMsg(moteIDtoSend,paramValue,3,ttl)			#BugFix
+		#sendSetParametersMsg(moteIDtoSend,paramValue,"setWmax",ttl) old-with Bug!
 	
 	def help_setWmax(self):
 		print "syntax: setWmax <moteIDtoSend> <paramValue> <ttl>",
@@ -224,7 +226,8 @@ class CLI(cmd.Cmd):
 		moteIDtoSend = params[0]
 		paramValue = params[1]
 		ttl = params[2]
-		sendSetParametersMsg(moteIDtoSend,paramValue,"setWmin",ttl)
+		sendSetParametersMsg(moteIDtoSend,paramValue,4,ttl) 		#BugFix
+		#sendSetParametersMsg(moteIDtoSend,paramValue,"setWmin",ttl) old-with bug!
 	
 	def help_setWmin(self):
 		print "syntax: setWmin <moteIDtoSend> <paramValue> <ttl>",
@@ -235,8 +238,9 @@ class CLI(cmd.Cmd):
 		moteIDtoSend = params[0]
 		paramValue = params[1]
 		ttl = params[2]
-		sendSetParametersMsg(moteIDtoSend,paramValue,"setTserver",ttl)
-	
+		sendSetParametersMsg(moteIDtoSend,paramValue,2,ttl)				#BugFix
+		#sendSetParametersMsg(moteIDtoSend,paramValue,"setTserver",ttl) old-with bug!
+
 	def help_setTserver(self):
 		print "syntax: setTserver <moteIDtoSend> <paramValue> <ttl>",
 		print "-- change Tserver parameter in indicated mote with ttl for sending message"
@@ -246,7 +250,8 @@ class CLI(cmd.Cmd):
 		moteIDtoSend = params[0]
 		paramValue = params[1]
 		ttl = params[2]
-		sendSetParametersMsg(moteIDtoSend,paramValue,"setTmeasure",ttl)
+		sendSetParametersMsg(moteIDtoSend,paramValue,1,ttl) 		#BugFix
+		#sendSetParametersMsg(moteIDtoSend,paramValue,"setTmeasure",ttl) old-with bug!
 	
 	def help_setTmeasure(self):
 		print "syntax: setTmeasure <moteIDtoSend> <paramValue> <ttl>",

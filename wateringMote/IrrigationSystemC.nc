@@ -45,6 +45,7 @@ implementation
 	command void IrrigationSystem.setWmax(uint8_t max){
 		if(wmax != max){
 			wmax = max;
+			// NAO APAGAR ESTA MENSAGEM DE DEBUG, É BASTANTE IMPORTANTE para a demonstracao
 			dbg("out", "IrrigationSystem: Wmax updated = %d \n",wmax);	//DEBUG
 		}
 	}
@@ -52,6 +53,7 @@ implementation
 	command void IrrigationSystem.setWmin(uint8_t min){
 		if(wmin != min){
 			wmin = min;
+			// NAO APAGAR ESTA MENSAGEM DE DEBUG, É BASTANTE IMPORTANTE para a demonstracao
 			dbg("out", "IrrigationSystem: Wmin updated = %d \n",wmin);	//DEBUG
 		}
 	}

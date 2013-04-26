@@ -25,6 +25,7 @@ implementation
 		if(tm != tMeasure){
 			tMeasure = tm;
 			call Timer.startPeriodic(tMeasure);
+			// NAO APAGAR ESTA MENSAGEM DE DEBUG, É BASTANTE IMPORTANTE para a demonstracao
 			dbg("out", "HumiditySensor: tMeasure updated = %d\n",tMeasure); //DEBUG	
 		}
 	}

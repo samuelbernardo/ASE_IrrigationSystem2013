@@ -32,6 +32,8 @@ Key: operationCode = {1,2,3,4}
     3 - setWmax
     4 - setWmin
 
+    5 - moteTurnOn
+    6 - moteTurnOff
     otherValues - Do Nothing
 */
 

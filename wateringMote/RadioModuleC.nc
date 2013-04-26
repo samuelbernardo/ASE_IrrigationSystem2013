@@ -86,7 +86,7 @@ implementation {
 		}
 		
 		measuresFile = fopen("serverLog/measures.log","w+");
-		fprintf(measuresFile, "Node id\t\tTimestamp\tMeasure\n");
+		fprintf(measuresFile, "NodeID\t\tTimestamp\tHumidityMeasure\n");
 		fclose(measuresFile);
 	}
 	
@@ -325,7 +325,8 @@ implementation {
 			if(tServer != paramValue){
 				tServer = paramValue;
 	      		call Timer.startPeriodic(tServer); //Restart timer com novo tServer
-				//dbg("out", "RadioModule: tServer updated = %d \n",tServer);	//DEBUG
+				// NAO APAGAR ESTA MENSAGEM DE DEBUG, É BASTANTE UTIL
+				dbg("out", "RadioModule: tServer updated = %d \n",tServer);
 			}
 			return;
 		}
@@ -402,8 +403,13 @@ implementation {
 			pktSnd->measuresIndex = pktRcv->measuresIndex;
 
 			for(i=0; i < pktRcv->measuresIndex; i++){
-				pktSnd->measures[i] = pktSnd->measures[i];
-				pktSnd->measuresTS[i] = pktSnd->measuresTS[i];
+				pktSnd->measures[i] = pktRcv->measures[i];    	//BugFix
+				pktSnd->measuresTS[i] = pktRcv->measuresTS[i];	//BugFix
+
+				/*
+	    		if(TOS_NODE_ID == 5){
+	    			dbg("out", "#### ID:%d i:%d m:%d ts:%d\n",pktRcv->srcNodeId,i,pktRcv->measures[i],pktRcv->measuresTS[i]);
+				}*/
 			}
 			
 			if (call AMSend.send(AM_BROADCAST_ADDR, &packet, sizeof(RadioMeasuresPacket)) == SUCCESS) {
