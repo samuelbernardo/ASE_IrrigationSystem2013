@@ -153,7 +153,7 @@ typedef nx_struct TTLsyncMsg {
 
     event void AMSend.sendDone(message_t* msg, error_t error) {
       if ( &syncPathPkt == msg ) {
-		TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
+		//TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
         //dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
         
         call RadioModule.setChannelState(FALSE);

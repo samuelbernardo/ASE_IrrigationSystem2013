@@ -118,7 +118,7 @@ implementation {
    event void Timer.fired() {
 		//dbg("out", "RadioTimerFire! \n");
    		mBufferIndexAux =  call IrrigationSystem.getMeasures(mBufferAux, mTSBufferAux);
-   		call RadioModule.sendMeasure(mBufferAux, mTSBufferAux, mBufferIndexAux);
+   		//call RadioModule.sendMeasure(mBufferAux, mTSBufferAux, mBufferIndexAux);
    		mBufferIndexAux = 0;
    		if(TOS_NODE_ID == 0) call RadioModule.detectMoteFailure();
    }
@@ -231,13 +231,16 @@ implementation {
 		//dbg("out","[verifyNewMeasureMsg]\nRadioMeasuresPacket: nodeId=%i\tmeasuresTS=%i\tmeasures=%i\nmeasuresControl[%i].measureTS=%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[0], measuresPkt->measures[0],measuresPkt->srcNodeId,measuresControl[measuresPkt->srcNodeId].measureTS);
 	
 		if(measuresControl[measuresPkt->srcNodeId].measureTS < measuresPkt->measuresTS[0]) {
-			measuresControl[measuresPkt->srcNodeId].measureTS = measuresPkt->measuresTS[0];
+			measuresControl[measuresPkt->srcNodeId].measureTS = measuresPkt->measuresTS[numMeasures - 1];
 			
 			// para controlo dos motes que se encontram a falhar
-			if(measuresControl[measuresPkt->srcNodeId].measureTScounter == measuresControl[measuresPkt->srcNodeId].measureTScontrol - 1) {  
+			/*if(measuresControl[measuresPkt->srcNodeId].measureTScounter == measuresControl[measuresPkt->srcNodeId].measureTScontrol - 1) {  
 				measuresControl[measuresPkt->srcNodeId].measureTSlast = measuresPkt->measuresTS[numMeasures - 1];
 				measuresControl[measuresPkt->srcNodeId].measureTScounter = 0;
 			}
+			else {
+				measuresControl[measuresPkt->srcNodeId].measureTScounter++;
+			}*/
 			
 			return TRUE;
 		}
@@ -536,23 +539,28 @@ implementation {
 
 	command void RadioModule.detectMoteFailure() {
 		FILE* measuresFile;
-		uint8_t i, numMeasures;
+		uint8_t i;
 		
-		numMeasures = 7;
-		
-		for(i=0; i < numMeasures; i++) {
-			if(measuresControl[i].measureTS == measuresControl[i].measureTSlast && measuresControl[i].measureTScounter != 0) {
-				if(measuresControl[i].moteState == FALSE) {
+		for(i=0; i < numNodes; i++) {
+			if(measuresControl[i].measureTScounter != 0) {
+				//dbg("out", "Entrei no if1. mote%i Tenho measureTS=%i, measureTSlast=%i, measureTScounter=%i.\n", measuresControl[i].measureTS, measuresControl[i].measureTSlast, measuresControl[i].measureTScounter);
+				if(measuresControl[i].moteState == FALSE && measuresControl[i].measureTScounter + 1 == __MEASURES_CONTROL__) {
+					dbg("out", "vou imprimir mensagem de warning que mote falhou. mote%i tenho measureTS=%i, measureTSlast=%i, measureTScounter=%i.\n", measuresControl[i].measureTS, measuresControl[i].measureTSlast, measuresControl[i].measureTScounter); 
 					measuresFile = fopen("serverLog/measures.log","a+");
 					fprintf(measuresFile, "WARNING: mote%i not sending measures! Last measure was at time %i and now is %i.\n", i, measuresControl[i].measureTS, measuresControl[i].measureTSlast);
 					fclose(measuresFile);
 				}
 				else if(measuresControl[i].moteState == TRUE) {
+					//dbg("out", "Passei o estado a false. mote%i Tenho measureTS=%i, measureTSlast=%i, measureTScounter=%i.\n", measuresControl[i].measureTS, measuresControl[i].measureTSlast, measuresControl[i].measureTScounter);
 					measuresControl[i].moteState = FALSE;
 				}
 			}
 			else if(measuresControl[i].moteState == FALSE) {
+				//dbg("out", "Passei o estado a true. mote%i Tenho measureTS=%i, measureTSlast=%i, measureTScounter=%i.\n", measuresControl[i].measureTS, measuresControl[i].measureTSlast, measuresControl[i].measureTScounter);
 				measuresControl[i].moteState = TRUE;
+			}
+			else {
+				//dbg("out", "NAO PASSEI EM LADO NENHUM!!! mote%i Tenho measureTS=%i, measureTSlast=%i, measureTScounter=%i.\n", measuresControl[i].measureTS, measuresControl[i].measureTSlast, measuresControl[i].measureTScounter);
 			}
 		}
 		

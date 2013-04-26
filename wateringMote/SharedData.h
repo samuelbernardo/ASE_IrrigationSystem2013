@@ -1,8 +1,8 @@
 #ifndef SHARED_DATA_H
 #define SHARED_DATA_H
 
-#define __TOTAL_NODES_NUMBER__ 20 //coloquei valor suficientemente grande para os exemplos esperados
-#define __MEASURES_CONTROL__ 10
+#define __TOTAL_NODES_NUMBER__ 6 //coloquei valor suficientemente grande para os exemplos esperados
+#define __MEASURES_CONTROL__ 4
 
 // ========================================
 // Nota: MaxSize desta estrutura = 28 Bytes

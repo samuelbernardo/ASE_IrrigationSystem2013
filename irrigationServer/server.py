@@ -197,8 +197,8 @@ class CLI(cmd.Cmd):
 		moteTurnON(moteIDtoSend,ttl)
 		
 	def help_moteTurnOn(self):
-		print "syntax: moteTurnOn <moteId>",
-		print "-- turn on mote with moteId"
+		print "syntax: moteTurnOn <moteId> <TTL>",
+		print "-- turn on mote with moteId send message with TTL"
 
 	def do_moteTurnOff(self, args):
 		params = [int(arg) for arg in args.split(' ') if arg.strip()]
@@ -207,8 +207,8 @@ class CLI(cmd.Cmd):
 		moteTurnOFF(moteIDtoSend,ttl)
 		
 	def help_moteTurnOff(self):
-		print "syntax: moteTurnOff <moteId>",
-		print "-- turn off mote with moteId"
+		print "syntax: moteTurnOff <moteId> <TTL>",
+		print "-- turn off mote with moteId send message with TTL"
 		
 	def do_setWmax(self,args):
 		params = [int(arg) for arg in args.split(' ') if arg.strip()]
