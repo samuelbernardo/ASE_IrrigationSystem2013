@@ -52,8 +52,12 @@ enum {
 };
 
 // measure messages filtering control
-typedef nx_struct MeasuresControl {
-	nx_uint16_t measureTS;
+typedef struct MeasuresControl {
+	uint16_t measureTS;
+	uint16_t measureTScontrol;
+	uint16_t measureTSlast;
+	uint16_t measureTScounter;
+	bool moteState;
 } MeasuresControl;
 
 #endif

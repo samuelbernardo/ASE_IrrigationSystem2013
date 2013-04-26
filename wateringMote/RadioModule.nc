@@ -8,5 +8,7 @@ interface RadioModule{
 	
 	command bool getChannelState();
 	command void setChannelState(bool state);
+	
+	command void detectMoteFailure();
 
 }

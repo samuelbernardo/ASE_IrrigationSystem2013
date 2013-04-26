@@ -67,11 +67,11 @@ typedef nx_struct TTLsyncMsg {
       }
     }
 
-		void ttlUpdate(TTLsyncMsg* btrpkt) {
-			btrpkt->ttl--;
-			btrpkt->numHopsToServer++;
-			btrpkt->lastNode = moteID;
-		}
+	void ttlUpdate(TTLsyncMsg* btrpkt) {
+		btrpkt->ttl--;
+		btrpkt->numHopsToServer++;
+		btrpkt->lastNode = moteID;
+	}
 		
     void reenviarMsgControlo(message_t* msg, TTLsyncMsg* btrpkt){
       // == REenviar PACOTES / ROUTING DE PACOTES == 
