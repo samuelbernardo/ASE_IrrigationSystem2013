@@ -37,7 +37,7 @@ implementation {
 	//relogio logico de envio e recepcao de mensagens 
 	uint16_t radioTimesatamp;
 	bool logInit;
-	
+	bool moteIsOn;
 	// ===================
 	
 	/**
@@ -66,6 +66,7 @@ implementation {
 	
 
   event void Boot.booted() {
+	moteIsOn = TRUE;
 	firstSend = TRUE; // Apenas para DEBUG, no fim tem de ser removido
 	
 	tServer = 9000; 		//Default Value
@@ -152,6 +153,10 @@ implementation {
 			case 2 : sprintf(setOperation,"setTserver"); break;
 			case 3 : sprintf(setOperation,"setWmax"); break;
 			case 4 : sprintf(setOperation,"setWmin"); break;
+			
+			case 5 : sprintf(setOperation,"turnON"); break;
+			case 6 : sprintf(setOperation,"turnOFF"); break;
+
 			default : dbg("out", "[ERROR@RadioModule@logSetParametersMessage] OperationCode Invalid!\n"); break;
 		}
 
@@ -261,9 +266,20 @@ implementation {
     //  mas com muitas medidas (no máximo 7). Para aproveitar ao maximo o tamanho da packet. 
 	command void RadioModule.sendMeasure(uint8_t *measure, uint16_t *measureTS, uint8_t measureIndex){
 
+
 		int i;
 		RadioMeasuresPacket *rmp;
 		//dbg("out", "Vou difundir mensagem com: m = %d, ts = %d \n", measure, measureTS);
+
+		if(!moteIsOn){ return;}
+		
+		//DEBUG---------------------
+		if(moteIsOn == TRUE)
+			dbg("out", "-I'M ALIVE!\n");
+		else 
+			dbg("out", "I'M dead!\n");
+		//--------------------------
+
 
 		// Nota: 2 e 3 condicao do IF serverm apenas para debug
 		// apenas o mote 1 envia leituras, e só as envia uma vez!
@@ -338,6 +354,24 @@ implementation {
 		if(operationCode == 4){ //set wmin
 	    	//dbg("out", "Recebi setParametersMsg -> setWmin\n");
 	    	call IrrigationSystem.setWmin(paramValue);
+			return;
+		}
+
+		//TurnON
+		if(operationCode == 5){
+			if(!moteIsOn){
+				dbg("out", "Mote is ON\n");
+				moteIsOn = TRUE;
+			}
+			return;
+		}
+
+		//TurnOFF
+		if(operationCode == 6){
+			if(moteIsOn){
+				dbg("out", "Mote is OFF\n");
+				moteIsOn = FALSE;
+			}
 			return;
 		}
 
@@ -422,7 +456,9 @@ implementation {
 
 	
 	event message_t* Receive.receive(message_t* bufPtr, void* payload, uint8_t len) {
-	    		
+	    	
+		if(!moteIsOn){ return bufPtr;}
+
 	 	//Recebeu mensagem do servidor
 	 	if(len == sizeof(radio_count_msg_t)){
 	    	
@@ -481,4 +517,8 @@ implementation {
 		channelIsBusy = state;
 	}
 	
+	command bool RadioModule.moteIsOn(){
+		return moteIsOn;
+	} 
+
 }

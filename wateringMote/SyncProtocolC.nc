@@ -1,5 +1,5 @@
  #define __NUM_MAX_MOTES__ 100
- #define __TIMER_PERIOD_MILLI__ 1000000
+ #define __TIMER_PERIOD_MILLI__ 10000
 
  #include <Timer.h>
  #include <stdlib.h>
@@ -48,6 +48,14 @@ typedef nx_struct TTLsyncMsg {
 			return ++counter;
 	}
 
+
+	void registarCalibracaoTTL(uint16_t newTTL, uint16_t tStamp){
+		FILE *msgOut;
+		msgOut = fopen("serverLog/syncMSG.log", "a+");
+		fprintf(msgOut, "\t\tMoteID: %d NewTTL= %d TS=%d \n", TOS_NODE_ID, newTTL,tStamp);
+		fclose(msgOut);
+	}
+
   void enviarMsgControlo(){
       /* == ENVIAR PACOTES == */ 
       // DEBUG: apenas o mote'0' envia mensagem inicial
@@ -79,9 +87,13 @@ typedef nx_struct TTLsyncMsg {
       if(!(call RadioModule.getChannelState()) && moteID != 0 && btrpkt->ttl > 1) {
 				
 				if(btrpkt->numHopsToServer < ttl_max || ts > btrpkt->syncTS) {
+					
+					//E aqui que se afaz a calibraco do TTL
 					ttl_max = btrpkt->numHopsToServer;
 					ts = btrpkt->syncTS;
-					dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
+					registarCalibracaoTTL(ttl_max,ts);
+
+					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
 					ttlUpdate(btrpkt);
 					if (call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(TTLsyncMsg)) == SUCCESS) {
 						call RadioModule.setChannelState(TRUE);
@@ -105,7 +117,7 @@ typedef nx_struct TTLsyncMsg {
 
     event void AMSend.sendDone(message_t* msg, error_t error) {
       if ( &syncPathPkt == msg ) {
-		//TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
+		TTLsyncMsg* payload = (TTLsyncMsg*)(call Packet.getPayload(msg, sizeof(TTLsyncMsg)));
         //dbg("out", "Mote%i enviou mensagem com timestamp %i \n", moteID, payload->syncTS);
         
         call RadioModule.setChannelState(FALSE);
@@ -123,6 +135,11 @@ typedef nx_struct TTLsyncMsg {
 				
 				if(moteID != 0) {
 					
+					//Se mote Estiver NAO(!) Ligado 
+					if(!(call RadioModule.moteIsOn())){
+						return NULL;
+					}
+
 					//dbg("out", "---------------------------------------\n");
 					//dbg("out", "Recebi mensagem do mote lastNode=%i, com timestamp= %i, numHopsToServer = %i, ttl = %i \n", btrpkt->lastNode, btrpkt->syncTS, btrpkt->numHopsToServer, btrpkt->ttl);
 					
@@ -165,6 +182,7 @@ typedef nx_struct TTLsyncMsg {
 	 * da topologia da rede
 	 **/
 	event void Timer0.fired() {
+		//dbg("out", "FIRED!\n");
 		enviarMsgControlo();
 	}
     

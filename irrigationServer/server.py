@@ -150,16 +150,13 @@ def step(length):
 		#print "valor do contador: %i " % (counter)
 
 
-def moteTurnON(moteId):
-	m = t.getNode(moteId)
-	if not m.isOn():
-		m.turnOn()
-		
-def moteTurnOFF(moteId):
-	m = t.getNode(moteId)
-	if m.isOn():
-		m.turnOff()
+def moteTurnON(moteId, ttl):
+	sendSetParametersMsg(moteId,0,5,int(ttl))
 
+		
+def moteTurnOFF(moteId, ttl):
+	sendSetParametersMsg(moteId,0,6,int(ttl))
+	
 
 # -------------------------------------------
 # Command line definition
@@ -193,17 +190,21 @@ class CLI(cmd.Cmd):
 		print "syntax: step <number of steps>",
 		print "-- continue simulation for the step number"
 
-	def do_moteTurnOn(self, arg):
-		moteTurnON(int(arg))
-		print "Mote "+arg+" have been turned on!"
+	def do_moteTurnOn(self, args):
+		params = [int(arg) for arg in args.split(' ') if arg.strip()]
+		moteIDtoSend = params[0]
+		ttl = params[1]
+		moteTurnON(moteIDtoSend,ttl)
 		
 	def help_moteTurnOn(self):
 		print "syntax: moteTurnOn <moteId>",
 		print "-- turn on mote with moteId"
 
-	def do_moteTurnOff(self, arg):
-		moteTurnON(int(arg))
-		print "Mote "+arg+" have been turned off!"
+	def do_moteTurnOff(self, args):
+		params = [int(arg) for arg in args.split(' ') if arg.strip()]
+		moteIDtoSend = params[0]
+		ttl = params[1]
+		moteTurnOFF(moteIDtoSend,ttl)
 		
 	def help_moteTurnOff(self):
 		print "syntax: moteTurnOff <moteId>",

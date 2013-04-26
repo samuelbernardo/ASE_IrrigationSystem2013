@@ -37,7 +37,7 @@ implementation
 	event void Boot.booted(){
 		tMeasure = 1000; 	//Valor Default (TODO: rever este valor que é maior que o que a variável consegue armazenar - aparece warning de overflow) 	
 		newMeasure = 17;
-		timeStamp = 0;
+		timeStamp = 1;
 		call Timer.startPeriodic(tMeasure);
 		dbg("out", "HumiditySensor has Booted\n");
 	}
@@ -54,8 +54,8 @@ implementation
 		//NOTA: este IF não tem nada a haver com a logica do projecto.
 		// apenas serve para corrigir um aparente BUGZILLA do TOSSIM
 //		if( receivedMeasure != 0){
-			timeStamp++;
 			signal HumiditySensor.newMeasure(receivedMeasure, timeStamp);
+			timeStamp++;
 //		}
 	}
 
