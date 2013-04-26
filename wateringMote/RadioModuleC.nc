@@ -11,7 +11,7 @@ module RadioModuleC @safe() {
   // Para enviar e processar packets
   uses interface Packet;    //aceder a message_t
   uses interface AMPacket;  //aceder a message_t
-  uses interface AMSend;    
+  uses interface AMSend;
   uses interface SplitControl as AMControl;
  
   // Para receber packets
@@ -84,6 +84,9 @@ implementation {
 		
 		for(nodeId=0; nodeId < numNodes; nodeId++) {
 			measuresControl[nodeId].measureTS = 0;
+			measuresControl[nodeId].measureTScontrol = 2;
+			measuresControl[nodeId].measureTSlast = 0;
+			measuresControl[nodeId].measureTScounter = 0;
 		}
 		
 		measuresFile = fopen("serverLog/measures.log","w+");
@@ -117,6 +120,7 @@ implementation {
    		mBufferIndexAux =  call IrrigationSystem.getMeasures(mBufferAux, mTSBufferAux);
    		call RadioModule.sendMeasure(mBufferAux, mTSBufferAux, mBufferIndexAux);
    		mBufferIndexAux = 0;
+   		if(TOS_NODE_ID == 0) call RadioModule.detectMoteFailure();
    }
 
    	// log da mensagem de set Parameters que o mote recebeu ou enviou,
@@ -223,11 +227,18 @@ implementation {
 	/**
 	 * Filter repeated messages
 	 **/
-	bool verifyNewMeasureMsg(RadioMeasuresPacket* measuresPkt) {
+	bool verifyNewMeasureMsg(RadioMeasuresPacket* measuresPkt, uint8_t numMeasures) {
 		//dbg("out","[verifyNewMeasureMsg]\nRadioMeasuresPacket: nodeId=%i\tmeasuresTS=%i\tmeasures=%i\nmeasuresControl[%i].measureTS=%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[0], measuresPkt->measures[0],measuresPkt->srcNodeId,measuresControl[measuresPkt->srcNodeId].measureTS);
 	
 		if(measuresControl[measuresPkt->srcNodeId].measureTS < measuresPkt->measuresTS[0]) {
 			measuresControl[measuresPkt->srcNodeId].measureTS = measuresPkt->measuresTS[0];
+			
+			// para controlo dos motes que se encontram a falhar
+			if(measuresControl[measuresPkt->srcNodeId].measureTScounter == measuresControl[measuresPkt->srcNodeId].measureTScontrol - 1) {  
+				measuresControl[measuresPkt->srcNodeId].measureTSlast = measuresPkt->measuresTS[numMeasures - 1];
+				measuresControl[measuresPkt->srcNodeId].measureTScounter = 0;
+			}
+			
 			return TRUE;
 		}
 		
@@ -242,12 +253,12 @@ implementation {
 		FILE* measuresFile;
 		
 		//dbg("out", "###############logMeasures begin\n");
+			
+		numMeasures = measuresPkt->measuresIndex;
 		
-		if(verifyNewMeasureMsg(measuresPkt)) {
+		if(verifyNewMeasureMsg(measuresPkt, numMeasures)) {
 			
 			measuresFile = fopen("serverLog/measures.log","a+");
-			
-			numMeasures = measuresPkt->measuresIndex;
 			
 			for(i=0; i < numMeasures; i++) {
 				fprintf(measuresFile, "%i\t\t%i\t\t%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[i], measuresPkt->measures[i]);
@@ -517,8 +528,34 @@ implementation {
 		channelIsBusy = state;
 	}
 	
+
 	command bool RadioModule.moteIsOn(){
 		return moteIsOn;
 	} 
 
+
+	command void RadioModule.detectMoteFailure() {
+		FILE* measuresFile;
+		uint8_t i, numMeasures;
+		
+		numMeasures = 7;
+		
+		for(i=0; i < numMeasures; i++) {
+			if(measuresControl[i].measureTS == measuresControl[i].measureTSlast && measuresControl[i].measureTScounter != 0) {
+				if(measuresControl[i].moteState == FALSE) {
+					measuresFile = fopen("serverLog/measures.log","a+");
+					fprintf(measuresFile, "WARNING: mote%i not sending measures! Last measure was at time %i and now is %i.\n", i, measuresControl[i].measureTS, measuresControl[i].measureTSlast);
+					fclose(measuresFile);
+				}
+				else if(measuresControl[i].moteState == TRUE) {
+					measuresControl[i].moteState = FALSE;
+				}
+			}
+			else if(measuresControl[i].moteState == FALSE) {
+				measuresControl[i].moteState = TRUE;
+			}
+		}
+		
+	}
+	
 }

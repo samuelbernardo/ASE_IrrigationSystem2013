@@ -75,11 +75,11 @@ typedef nx_struct TTLsyncMsg {
       }
     }
 
-		void ttlUpdate(TTLsyncMsg* btrpkt) {
-			btrpkt->ttl--;
-			btrpkt->numHopsToServer++;
-			btrpkt->lastNode = moteID;
-		}
+	void ttlUpdate(TTLsyncMsg* btrpkt) {
+		btrpkt->ttl--;
+		btrpkt->numHopsToServer++;
+		btrpkt->lastNode = moteID;
+	}
 		
     void reenviarMsgControlo(message_t* msg, TTLsyncMsg* btrpkt){
       // == REenviar PACOTES / ROUTING DE PACOTES == 
@@ -91,6 +91,7 @@ typedef nx_struct TTLsyncMsg {
 					//E aqui que se afaz a calibraco do TTL
 					ttl_max = btrpkt->numHopsToServer;
 					ts = btrpkt->syncTS;
+
 					registarCalibracaoTTL(ttl_max,ts);
 
 					//dbg("out", "Actualizei ttlmax=%i para mensagem recebida do mote%i\n", ttl_max, btrpkt->lastNode);
@@ -137,7 +138,7 @@ typedef nx_struct TTLsyncMsg {
 					
 					//Se mote Estiver NAO(!) Ligado 
 					if(!(call RadioModule.moteIsOn())){
-						return NULL;
+						return &syncPathPkt; 
 					}
 
 					//dbg("out", "---------------------------------------\n");
@@ -164,7 +165,6 @@ typedef nx_struct TTLsyncMsg {
 					fclose(msgOut);
 					
 				}
-				
       }
       
       return &syncPathPkt;
