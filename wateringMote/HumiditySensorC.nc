@@ -16,6 +16,7 @@ implementation
 	uint16_t tMeasure;		// deltaTime for Timer
 	uint16_t newMeasure;	// humidityValueRead to send
 	uint16_t timeStamp;
+	bool humiditySensorBroken;
 
 	
 	command void HumiditySensor.setTmeasure(uint16_t tm){		
@@ -38,6 +39,7 @@ implementation
 		tMeasure = 1000; 	//Valor Default (TODO: rever este valor que é maior que o que a variável consegue armazenar - aparece warning de overflow) 	
 		newMeasure = 17;
 		timeStamp = 1;
+		humiditySensorBroken = FALSE;
 		call Timer.startPeriodic(tMeasure);
 		dbg("out", "HumiditySensor has Booted\n");
 	}
@@ -53,16 +55,21 @@ implementation
 		
 		//NOTA: este IF não tem nada a haver com a logica do projecto.
 		// apenas serve para corrigir um aparente BUGZILLA do TOSSIM
-//		if( receivedMeasure != 0){
+		
+		if(!humiditySensorBroken){
 			signal HumiditySensor.newMeasure(receivedMeasure, timeStamp);
 			timeStamp++;
-//		}
+		}
+		else{
+			//receivedMeasure = 0 porque humiditySensor esta' danificado
+			signal HumiditySensor.newMeasure(0, timeStamp);
+			timeStamp++;
+		}
 	}
 
 	default event void HumiditySensor.newMeasure(uint8_t newMeasureValue, uint16_t measureTimestamp){
 		//Nao adianta emeter aqui codigo porque ele nao e' executado
 		// apenas declara o evento emitido por este modulo
 	}
-
 }
 

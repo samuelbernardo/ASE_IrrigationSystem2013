@@ -251,7 +251,7 @@ implementation {
 	void logMeasures(RadioMeasuresPacket* measuresPkt) {
 		uint8_t i, numMeasures;
 		FILE* measuresFile;
-		
+		uint8_t humidityValue;
 		//dbg("out", "###############logMeasures begin\n");
 			
 		numMeasures = measuresPkt->measuresIndex;
@@ -261,7 +261,15 @@ implementation {
 			measuresFile = fopen("serverLog/measures.log","a+");
 			
 			for(i=0; i < numMeasures; i++) {
-				fprintf(measuresFile, "%i\t\t%i\t\t%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[i], measuresPkt->measures[i]);
+
+				humidityValue = measuresPkt->measures[i];
+
+				if( humidityValue != 0){
+					fprintf(measuresFile, "%i\t\t\t%i\t\t\t%i\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[i], humidityValue);
+				}
+				else{
+					fprintf(measuresFile, "%i\t\t\t%i\t\t\t%s\n", measuresPkt->srcNodeId, measuresPkt->measuresTS[i], "HumiditySensorBroken");
+				}
 			}
 			
 			fclose(measuresFile);
@@ -284,12 +292,12 @@ implementation {
 
 		if(!moteIsOn){ return;}
 		
-		//DEBUG---------------------
+		/*DEBUG---------------------
 		if(moteIsOn == TRUE)
 			dbg("out", "-I'M ALIVE!\n");
 		else 
 			dbg("out", "I'M dead!\n");
-		//--------------------------
+		-------------------------- */
 
 
 		// Nota: 2 e 3 condicao do IF serverm apenas para debug
